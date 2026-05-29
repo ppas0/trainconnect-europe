@@ -65,7 +65,29 @@ export const ticketsApi = {
 export const affiliateApi = {
   trackClick: (data) => http.post("/affiliate/click", data).then((r) => r.data),
   stats: () => http.get("/affiliate/stats").then((r) => r.data),
+  getConfig: () => http.get("/affiliate/config").then((r) => r.data),
+  saveConfig: (data) => http.post("/affiliate/config", data).then((r) => r.data),
 };
+
+// ---- Push ----
+export const pushApi = {
+  publicKey: () => http.get("/push/public-key").then((r) => r.data.public_key),
+  subscribe: (subscription) =>
+    http.post("/push/subscribe", { endpoint: subscription.endpoint, keys: subscription.keys }).then((r) => r.data),
+  unsubscribe: (endpoint) => http.post("/push/unsubscribe", { endpoint }).then((r) => r.data),
+  test: () => http.post("/push/test").then((r) => r.data),
+  notifyDelays: () => http.post("/push/notify-delays").then((r) => r.data),
+};
+
+// b64url -> Uint8Array (for VAPID applicationServerKey)
+export function urlBase64ToUint8Array(b64) {
+  const padding = "=".repeat((4 - (b64.length % 4)) % 4);
+  const base64 = (b64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
 
 // ---- helpers ----
 export const fmtTime = (iso) => {

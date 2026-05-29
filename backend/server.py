@@ -43,6 +43,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fpdf import FPDF
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, BeforeValidator, EmailStr, Field
+from pywebpush import webpush, WebPushException
 
 from emergentintegrations.payments.stripe.checkout import (
     CheckoutSessionRequest,
@@ -64,6 +65,9 @@ JWT_ALG = os.environ["JWT_ALGORITHM"]
 JWT_EXPIRE_MIN = int(os.environ["JWT_EXPIRE_MIN"])
 STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
 TRANSPORT_BASE = os.environ["TRANSPORT_REST_BASE"]
+VAPID_PRIVATE_KEY_FILE = os.environ.get("VAPID_PRIVATE_KEY_FILE", "/app/backend/vapid_private.pem")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_CONTACT = os.environ.get("VAPID_CONTACT", "mailto:admin@trainconnect.eu")
 CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 
 client = AsyncIOMotorClient(MONGO_URL)
@@ -282,12 +286,25 @@ EU_COUNTRIES = set(COUNTRY_PROVIDERS.keys())
 TRAINLINE_CSV_URL = "https://raw.githubusercontent.com/trainline-eu/stations/master/stations.csv"
 
 
-def resolve_provider_links(journey: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Return one provider deep-link per unique country touched by the journey."""
+async def resolve_provider_links(journey: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Return one provider deep-link per unique country, decorated with affiliate IDs if configured."""
+    # Load current affiliate config (one doc per provider key)
+    affiliate_map: Dict[str, str] = {}
+    async for cfg in db.affiliate_config.find():
+        if cfg.get("affiliate_id"):
+            affiliate_map[cfg["_id"]] = cfg["affiliate_id"]
+
     seen_countries = set()
     out: List[Dict[str, str]] = []
+
+    def decorate(url: str, op_key: str) -> str:
+        aff = affiliate_map.get(op_key)
+        if not aff:
+            return url
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}aid={aff}"
+
     for leg in journey["legs"]:
-        # use country at start of each leg, plus final to-country
         country = leg["from"]["country"]
         if country in seen_countries:
             continue
@@ -298,14 +315,16 @@ def resolve_provider_links(journey: Dict[str, Any]) -> List[Dict[str, str]]:
             to_name=leg["to"]["name"],
             iso_date=leg["departure"][:10],
         )
-        out.append({"operator": op_key, "name": info["name"], "country": country, "url": url, "leg": f"{leg['from']['city']} → {leg['to']['city']}"})
+        out.append({"operator": op_key, "name": info["name"], "country": country,
+                    "url": decorate(url, op_key), "leg": f"{leg['from']['city']} → {leg['to']['city']}"})
         seen_countries.add(country)
-    # also add the final destination country if different
+
     last = journey["legs"][-1]["to"]
     if last["country"] not in seen_countries:
         op_key = COUNTRY_PROVIDERS.get(last["country"], "DB ICE")
         info = PROVIDER_LINKS.get(op_key) or PROVIDER_LINKS["DB ICE"]
-        out.append({"operator": op_key, "name": info["name"], "country": last["country"], "url": info["home"], "leg": f"{last['city']} ({last['country']})"})
+        out.append({"operator": op_key, "name": info["name"], "country": last["country"],
+                    "url": decorate(info["home"], op_key), "leg": f"{last['city']} ({last['country']})"})
     return out
 
 
@@ -864,7 +883,7 @@ async def journey_detail(journey_id: str):
     if not cached:
         raise HTTPException(404, "Journey not in cache. Re-run search.")
     cached["id"] = cached.pop("_id")
-    cached["provider_links"] = resolve_provider_links(cached)
+    cached["provider_links"] = await resolve_provider_links(cached)
     return cached
 
 
@@ -1093,7 +1112,7 @@ async def ticket_detail(ticket_id: str, user=Depends(current_user)):
     if j:
         j["id"] = j.pop("_id")
         t["journey"] = j
-        t["provider_links"] = resolve_provider_links(j)
+        t["provider_links"] = await resolve_provider_links(j)
     return t
 
 
@@ -1417,8 +1436,218 @@ async def admin_stats(user=Depends(current_user)):
     }
 
 
+# ---------------------------------------------------------------------------
+# Affiliate configuration (user-settable provider IDs)
+# ---------------------------------------------------------------------------
+class AffiliateConfigIn(BaseModel):
+    provider: str  # key from PROVIDER_LINKS
+    affiliate_id: Optional[str] = None
+    signup_url: Optional[str] = None
+    notes: Optional[str] = None
+
+
+# Public list of all known providers + signup URLs so user can apply directly
+PROVIDER_SIGNUP_URLS: Dict[str, str] = {
+    "DB ICE":        "https://partner.bahn.de/",
+    "SNCF TGV":      "https://www.sncf-connect.com/partners (Awin/Rakuten)",
+    "ÖBB Railjet":   "https://www.oebb.at/partner",
+    "SBB IC":        "https://company.sbb.ch/de/medien/partner.html",
+    "Trenitalia FR": "https://www.trenitalia.com/it/informazioni/programmi-affiliazione.html",
+    "Eurostar":      "https://www.eurostar.com/uk-en/info/affiliate-program (via Awin)",
+    "Renfe AVE":     "https://www.renfe.com/es/en/group/about-renfe/partners",
+    "SJ":            "https://www.sj.se/en/about-sj/about-the-company/partners",
+    "Vy":            "https://www.vy.no/en/about-vy/contact-and-customer-service",
+    "NS Intercity":  "https://www.ns.nl/en/about-ns/partnerships",
+    "DSB":           "https://www.dsb.dk/about-dsb/",
+    "VR":            "https://www.vr.fi/en/affiliate",
+    "Eurail":        "https://www.eurail.com/en/affiliate-program",
+    "National Rail": "https://affiliatewindow.com (search 'National Rail UK')",
+    "Irish Rail":    "https://www.irishrail.ie/en-ie/contact-us",
+    "TCDD":          "https://www.tcddtasimacilik.gov.tr/en/contact",
+    "CP":            "https://www.cp.pt/passageiros/en",
+    "PKP":           "https://www.intercity.pl/en/site/contact.html",
+    "Hellenic":      "https://hellenictrain.gr/en/contact",
+}
+
+
+@api.get("/affiliate/config")
+async def get_affiliate_config(user=Depends(current_user)):
+    """List all providers + the user's configured affiliate IDs."""
+    rows = await db.affiliate_config.find().to_list(100)
+    saved: Dict[str, Dict[str, Any]] = {r["_id"]: r for r in rows}
+    out = []
+    for key, info in PROVIDER_LINKS.items():
+        row = saved.get(key) or {}
+        out.append({
+            "provider": key,
+            "name": info["name"],
+            "affiliate_id": row.get("affiliate_id"),
+            "signup_url": PROVIDER_SIGNUP_URLS.get(key, info["home"]),
+            "notes": row.get("notes"),
+            "updated_at": row.get("updated_at"),
+        })
+    return out
+
+
+@api.post("/affiliate/config")
+async def set_affiliate_config(body: AffiliateConfigIn, user=Depends(current_user)):
+    """Save / update affiliate ID for one provider."""
+    if body.provider not in PROVIDER_LINKS:
+        raise HTTPException(400, f"Unknown provider '{body.provider}'")
+    await db.affiliate_config.update_one(
+        {"_id": body.provider},
+        {"$set": {
+            "affiliate_id": (body.affiliate_id or "").strip() or None,
+            "notes": body.notes,
+            "updated_by": user["id"],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Web Push notifications for delays
+# ---------------------------------------------------------------------------
+class PushSubscribeIn(BaseModel):
+    endpoint: str
+    keys: Dict[str, str]  # {"p256dh":"...","auth":"..."}
+
+
+@api.get("/push/public-key")
+async def push_public_key():
+    return {"public_key": VAPID_PUBLIC_KEY}
+
+
+@api.post("/push/subscribe")
+async def push_subscribe(body: PushSubscribeIn, user=Depends(current_user)):
+    sid = hashlib.sha1(body.endpoint.encode()).hexdigest()
+    await db.push_subs.update_one(
+        {"_id": sid},
+        {"$set": {
+            "endpoint": body.endpoint,
+            "keys": body.keys,
+            "user_id": user["id"],
+            "active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
+    return {"ok": True, "subscription_id": sid}
+
+
+@api.post("/push/unsubscribe")
+async def push_unsubscribe(body: Dict[str, str], user=Depends(current_user)):
+    sid = hashlib.sha1((body.get("endpoint") or "").encode()).hexdigest()
+    await db.push_subs.update_one({"_id": sid, "user_id": user["id"]}, {"$set": {"active": False}})
+    return {"ok": True}
+
+
+def _vapid_claims() -> Dict[str, Any]:
+    return {"sub": VAPID_CONTACT}
+
+
+async def _send_push(sub: Dict[str, Any], title: str, body: str, url: str = "/tickets") -> bool:
+    """Send one push notification. Returns True if delivered."""
+    try:
+        webpush(
+            subscription_info={"endpoint": sub["endpoint"], "keys": sub["keys"]},
+            data=json.dumps({"title": title, "body": body, "url": url, "icon": "/icon-192.png", "badge": "/icon-192.png"}),
+            vapid_private_key=VAPID_PRIVATE_KEY_FILE,
+            vapid_claims=_vapid_claims(),
+        )
+        return True
+    except WebPushException as e:
+        logger.info("push failed for %s: %s", sub.get("_id"), e)
+        # 410 Gone -> mark inactive
+        if e.response is not None and e.response.status_code in (404, 410):
+            await db.push_subs.update_one({"_id": sub["_id"]}, {"$set": {"active": False}})
+        return False
+    except Exception as e:
+        logger.warning("push error: %s", e)
+        return False
+
+
+@api.post("/push/test")
+async def push_test(user=Depends(current_user)):
+    """Send a test notification to all of the current user's active subscriptions."""
+    sent = 0
+    async for sub in db.push_subs.find({"user_id": user["id"], "active": True}):
+        ok = await _send_push(sub, "TrainConnect Test ✅", "Wenn du das siehst, sind Push-Notifications aktiv.", "/tickets")
+        sent += 1 if ok else 0
+    return {"sent": sent}
+
+
+@api.post("/push/notify-delays")
+async def push_notify_delays(user=Depends(current_user)):
+    """Manually trigger the delay-check loop (also runs every 5 min in background)."""
+    return await _check_and_push_delays()
+
+
+async def _check_and_push_delays() -> Dict[str, Any]:
+    """For each upcoming ticket (next 24h), pull live data and notify if delay > 5min.
+    Falls back to journey_cache's static delay_min when transport.rest isn't reachable.
+    """
+    now = datetime.now(timezone.utc)
+    horizon = now + timedelta(hours=24)
+    notified = 0
+    checked = 0
+    async for t in db.tickets.find({"status": "confirmed"}):
+        try:
+            dep = datetime.fromisoformat(t["departure"])
+        except Exception:
+            continue
+        if not (now - timedelta(hours=1) < dep < horizon):
+            continue
+        j = await db.journey_cache.find_one({"_id": t["journey_id"]})
+        if not j:
+            continue
+        # detect max delay across legs (live first, fallback to cached delay_min)
+        max_delay = 0
+        delayed_leg = None
+        for leg in j["legs"]:
+            d = leg.get("delay_min", 0) or 0
+            if d > max_delay:
+                max_delay = d
+                delayed_leg = leg
+        if max_delay < 5:
+            continue
+        # de-duplicate notifications per ticket+delay-bucket
+        notif_key = f"{t['_id']}:{max_delay // 5 * 5}"
+        if await db.push_log.find_one({"_id": notif_key}):
+            continue
+        await db.push_log.insert_one({
+            "_id": notif_key,
+            "ticket_id": t["_id"],
+            "delay_min": max_delay,
+            "ts": now.isoformat(),
+        })
+        title = f"⚠ +{max_delay} min Verspätung – {t['pnr']}"
+        body = f"{delayed_leg['operator']} {delayed_leg['train_no']} {delayed_leg['from']['city']}→{delayed_leg['to']['city']}"
+        async for sub in db.push_subs.find({"user_id": t["user_id"], "active": True}):
+            if await _send_push(sub, title, body, "/tickets"):
+                notified += 1
+        checked += 1
+    return {"checked": checked, "notified": notified}
+
+
+async def _delay_poller_loop():
+    """Background task: every 5 minutes scan for delays and push."""
+    await asyncio.sleep(20)  # wait until startup settles
+    while True:
+        try:
+            res = await _check_and_push_delays()
+            if res["notified"]:
+                logger.info("Push delay-loop: %s", res)
+        except Exception as e:
+            logger.warning("delay poll error: %s", e)
+        await asyncio.sleep(300)
+
+
 @app.on_event("startup")
-async def _startup():
+async def _push_startup():
+    asyncio.create_task(_delay_poller_loop())
     if await db.stations.count_documents({}) == 0:
         await db.stations.insert_many([{**s, "_id": s["id"]} for s in SEED_STATIONS])
     if await db.popular_routes.count_documents({}) == 0:

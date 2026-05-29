@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut, AppleLogo, CalendarPlus, Funnel } from "@phosphor-icons/react";
-import { trainApi, cartApi, ticketsApi, affiliateApi, fmtTime, fmtDate, fmtDur, fmtPrice } from "./api";
+import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut, AppleLogo, CalendarPlus, Funnel, Bell, BellSlash, Gear, FloppyDisk } from "@phosphor-icons/react";
+import { trainApi, cartApi, ticketsApi, affiliateApi, pushApi, urlBase64ToUint8Array, fmtTime, fmtDate, fmtDur, fmtPrice, BACKEND_URL } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT } from "./i18n";
 import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill } from "./components";
@@ -412,6 +412,7 @@ export function Tickets() {
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="eyebrow">{t("tk.account")}</div>
       <h1 className="font-display text-4xl uppercase">{t("tk.title")}</h1>
+      <div className="mt-6"><PushToggle /></div>
       <div className="mt-8 grid gap-4">
         {(data || []).length === 0 && <div className="surface p-8 text-center text-[#9baeca]">{t("tk.none")}</div>}
         {(data || []).map((tk) => {
@@ -621,6 +622,147 @@ export function AffiliateDashboard() {
             </div>
           ))}
         </div>
+      </div>
+
+      <AffiliateConfigCard />
+    </div>
+  );
+}
+
+// ============== Push Subscribe Toggle ==============
+function PushToggle() {
+  const [status, setStatus] = useState("idle"); // idle | unsupported | subscribed | denied
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setStatus("unsupported"); return;
+    }
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) setStatus("subscribed");
+    });
+  }, []);
+
+  const subscribe = async () => {
+    setBusy(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setStatus("denied"); setBusy(false); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const key = process.env.REACT_APP_VAPID_PUBLIC_KEY || (await pushApi.publicKey());
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) });
+      await pushApi.subscribe(sub.toJSON());
+      setStatus("subscribed");
+    } catch (e) {
+      console.error(e);
+      setStatus("idle");
+    } finally { setBusy(false); }
+  };
+
+  const unsubscribe = async () => {
+    setBusy(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await pushApi.unsubscribe(sub.endpoint);
+        await sub.unsubscribe();
+      }
+      setStatus("idle");
+    } finally { setBusy(false); }
+  };
+
+  const testPush = async () => { setBusy(true); try { await pushApi.test(); } finally { setBusy(false); } };
+
+  if (status === "unsupported")
+    return <div className="text-xs text-[#9baeca]">Push wird in diesem Browser nicht unterstützt.</div>;
+
+  return (
+    <div className="surface p-5 flex items-center justify-between gap-4 flex-wrap" data-testid="push-toggle">
+      <div className="flex items-center gap-3">
+        {status === "subscribed" ? <Bell size={28} weight="duotone" color="#E63946" /> : <BellSlash size={28} weight="duotone" color="#9baeca" />}
+        <div>
+          <div className="font-display text-lg uppercase">Verspätungs-Alerts</div>
+          <div className="text-xs text-[#9baeca] mt-1">
+            {status === "subscribed" ? "Aktiv – du bekommst Push wenn dein Zug Verspätung hat." : status === "denied" ? "Browser blockiert Push. In den Browser-Einstellungen erlauben." : "Push aktivieren, um über Verspätungen sofort informiert zu werden."}
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {status === "subscribed" ? (
+          <>
+            <button data-testid="push-test-btn" disabled={busy} onClick={testPush} className="btn btn-ghost !py-2">Test senden</button>
+            <button data-testid="push-unsub-btn" disabled={busy} onClick={unsubscribe} className="btn btn-ghost !py-2">Deaktivieren</button>
+          </>
+        ) : (
+          <button data-testid="push-sub-btn" disabled={busy} onClick={subscribe} className="btn btn-primary !py-2">
+            <Bell size={14} weight="bold" /> Push aktivieren
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============== Affiliate Config Card ==============
+function AffiliateConfigCard() {
+  const { data, refetch } = useQuery({ queryKey: ["affiliate-config"], queryFn: affiliateApi.getConfig });
+  const [edits, setEdits] = useState({}); // { provider: id }
+  const [saving, setSaving] = useState(null);
+
+  if (!data) return null;
+
+  const save = async (p) => {
+    const aid = edits[p.provider];
+    if (aid === undefined) return;
+    setSaving(p.provider);
+    try {
+      await affiliateApi.saveConfig({ provider: p.provider, affiliate_id: aid });
+      await refetch();
+    } finally { setSaving(null); }
+  };
+
+  return (
+    <div className="mt-10 surface p-6" data-testid="affiliate-config">
+      <h2 className="font-display text-2xl uppercase flex items-center gap-2"><Gear size={22} weight="duotone" /> Partner-IDs verwalten</h2>
+      <div className="text-xs text-[#9baeca] mt-2 font-body">
+        Trage hier deine Affiliate-/Partner-IDs ein. Sie werden automatisch an alle Provider-Links angehängt (`?aid=…`).
+        Beantrage die IDs <strong>direkt bei den Anbietern</strong> (Links rechts) — meist kostenlos, Provision 4–7 % je Buchung.
+      </div>
+      <div className="mt-5 grid gap-2">
+        {data.map((p) => (
+          <div key={p.provider} className="border border-[#1a2d5e] p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center" data-testid={`aff-row-${p.provider}`}>
+            <div className="md:col-span-3">
+              <div className="font-mono text-sm uppercase tracking-wider">{p.name}</div>
+              <div className="eyebrow">{p.provider}</div>
+            </div>
+            <div className="md:col-span-5">
+              <input
+                data-testid={`aff-input-${p.provider}`}
+                className="field-input"
+                placeholder={p.affiliate_id ? "" : "z.B. AID-12345"}
+                defaultValue={p.affiliate_id || ""}
+                onChange={(e) => setEdits({ ...edits, [p.provider]: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-3">
+              <a href={p.signup_url.split(" ")[0]} target="_blank" rel="noopener noreferrer" className="text-xs text-[#9baeca] hover:text-white truncate flex items-center gap-1">
+                <ArrowSquareOut size={12} /> Partner-Programm
+              </a>
+            </div>
+            <div className="md:col-span-1 text-right">
+              <button
+                data-testid={`aff-save-${p.provider}`}
+                disabled={saving === p.provider || edits[p.provider] === undefined}
+                onClick={() => save(p)}
+                className="btn btn-ghost !py-1 !px-2"
+              >
+                <FloppyDisk size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
