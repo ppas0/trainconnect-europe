@@ -2,17 +2,56 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Link, useNavigate } from "react-router-dom";
-import { TrainSimple, MapPin, MagnifyingGlass, Ticket, SignIn, SignOut, ListBullets, ShoppingCart } from "@phosphor-icons/react";
+import { TrainSimple, MapPin, MagnifyingGlass, Ticket, SignIn, SignOut, ListBullets, ShoppingCart, Globe, CaretDown } from "@phosphor-icons/react";
 import { trainApi, fmtTime } from "./api";
 import { useAuth, useCart } from "./store";
+import { useT, LANGS } from "./i18n";
+
+// ============== Lang Switcher ==============
+function LangSwitcher() {
+  const { lang, setLang } = useT();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const click = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", click);
+    return () => document.removeEventListener("mousedown", click);
+  }, []);
+  const current = LANGS.find((l) => l.code === lang) || LANGS[0];
+  return (
+    <div className="relative" ref={ref}>
+      <button data-testid="lang-switcher-btn" onClick={() => setOpen(!open)} className="btn btn-ghost !py-2 !px-3">
+        <Globe size={16} weight="duotone" />
+        <span className="hidden sm:inline">{current.flag} {current.code.toUpperCase()}</span>
+        <CaretDown size={12} />
+      </button>
+      {open && (
+        <ul className="absolute right-0 top-full mt-1 surface min-w-[160px] z-50">
+          {LANGS.map((l) => (
+            <li key={l.code}>
+              <button
+                data-testid={`lang-opt-${l.code}`}
+                onClick={() => { setLang(l.code); setOpen(false); }}
+                className={"w-full text-left px-4 py-2 hover:bg-[#1a2d5e] flex items-center gap-2 text-sm " + (l.code === lang ? "text-[#E63946]" : "text-white")}
+              >
+                <span>{l.flag}</span> <span>{l.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // ============== Header ==============
 export function Header() {
   const { user, logout } = useAuth();
   const { count } = useCart();
+  const { t } = useT();
   return (
     <header className="glass sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4 gap-3">
         <Link to="/" className="flex items-center gap-3" data-testid="nav-logo">
           <TrainSimple size={26} weight="duotone" color="#E63946" />
           <div className="font-display text-lg leading-none tracking-tighter">
@@ -20,13 +59,14 @@ export function Header() {
           </div>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm font-mono uppercase tracking-widest text-[#9baeca]">
-          <Link to="/stations" data-testid="nav-stations" className="hover:text-white">Bahnhöfe</Link>
-          <Link to="/tickets" data-testid="nav-tickets" className="hover:text-white">Tickets</Link>
+          <Link to="/stations" data-testid="nav-stations" className="hover:text-white">{t("nav.stations")}</Link>
+          <Link to="/tickets" data-testid="nav-tickets" className="hover:text-white">{t("nav.tickets")}</Link>
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <LangSwitcher />
           <Link to="/cart" data-testid="nav-cart" className="relative btn btn-ghost !py-2 !px-3">
             <ShoppingCart size={16} weight="duotone" />
-            <span className="hidden sm:inline">Warenkorb</span>
+            <span className="hidden sm:inline">{t("nav.cart")}</span>
             {count > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E63946] text-[#FDFBF7] font-mono text-[10px] px-1.5 py-0.5">
                 {count}
@@ -36,12 +76,12 @@ export function Header() {
           {user ? (
             <button data-testid="nav-logout" onClick={logout} className="btn btn-ghost !py-2 !px-3">
               <SignOut size={16} weight="duotone" />
-              <span className="hidden sm:inline">{user.name?.split(" ")[0] || "Ich"}</span>
+              <span className="hidden sm:inline">{user.name?.split(" ")[0] || t("nav.logout")}</span>
             </button>
           ) : (
             <Link to="/login" data-testid="nav-login" className="btn !py-2 !px-3">
               <SignIn size={16} weight="duotone" />
-              <span className="hidden sm:inline">Einloggen</span>
+              <span className="hidden sm:inline">{t("nav.login")}</span>
             </Link>
           )}
         </div>
@@ -85,11 +125,11 @@ export function StationInput({ label, value, onChange, placeholder, testid }) {
 
   useEffect(() => {
     if (!q || q.length < 2) { setResults([]); return; }
-    const t = setTimeout(async () => {
+    const tt = setTimeout(async () => {
       const r = await trainApi.searchStations(q);
       setResults(r);
     }, 220);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tt);
   }, [q]);
 
   useEffect(() => {
@@ -134,6 +174,7 @@ export function StationInput({ label, value, onChange, placeholder, testid }) {
 // ============== Search Widget ==============
 export function SearchWidget({ initial }) {
   const navigate = useNavigate();
+  const { t } = useT();
   const [from, setFrom] = useState(initial?.from || null);
   const [to, setTo] = useState(initial?.to || null);
   const [date, setDate] = useState(initial?.date || new Date().toISOString().slice(0, 10));
@@ -151,25 +192,25 @@ export function SearchWidget({ initial }) {
   return (
     <form onSubmit={submit} className="tracing-beam p-6 md:p-8 fade-up" data-testid="search-widget">
       <div className="grid md:grid-cols-12 gap-6">
-        <div className="md:col-span-4"><StationInput testid="from-input" label="Von" value={from} onChange={setFrom} placeholder="Stadt oder Bahnhof" /></div>
-        <div className="md:col-span-4"><StationInput testid="to-input" label="Nach" value={to} onChange={setTo} placeholder="z.B. Athína" /></div>
+        <div className="md:col-span-4"><StationInput testid="from-input" label={t("form.from")} value={from} onChange={setFrom} placeholder={t("form.from_ph")} /></div>
+        <div className="md:col-span-4"><StationInput testid="to-input" label={t("form.to")} value={to} onChange={setTo} placeholder={t("form.to_ph")} /></div>
         <div className="md:col-span-2">
-          <label className="field-label">Datum</label>
+          <label className="field-label">{t("form.date")}</label>
           <input data-testid="date-input" className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="md:col-span-1">
-          <label className="field-label">Zeit</label>
+          <label className="field-label">{t("form.time")}</label>
           <input data-testid="time-input" className="field-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
         <div className="md:col-span-1">
-          <label className="field-label">Pers.</label>
+          <label className="field-label">{t("form.pax")}</label>
           <input data-testid="pax-input" className="field-input" type="number" min={1} max={9} value={passengers} onChange={(e) => setPassengers(parseInt(e.target.value || "1"))} />
         </div>
       </div>
-      <div className="mt-6 flex items-center justify-between">
-        <div className="demo-badge" title="Stripe Testmodus aktiv">Demo · Live-Daten + Test-Payment</div>
+      <div className="mt-6 flex items-center justify-between flex-wrap gap-3">
+        <div className="demo-badge">{t("form.demo_badge")}</div>
         <button data-testid="search-trains-btn" className="btn btn-primary" type="submit">
-          <MagnifyingGlass size={16} weight="bold" /> Verbindungen finden
+          <MagnifyingGlass size={16} weight="bold" /> {t("form.submit")}
         </button>
       </div>
     </form>
@@ -270,6 +311,7 @@ export function StationsMap({ stations, onSelect }) {
 
 // ============== Journey Card ==============
 export function JourneyCard({ j, onBook, onView }) {
+  const { t } = useT();
   const dep = fmtTime(j.departure);
   const arr = fmtTime(j.arrival);
   const hasDelay = j.legs.some((l) => l.delay_min > 0);
@@ -280,9 +322,9 @@ export function JourneyCard({ j, onBook, onView }) {
           <div className="eyebrow flex items-center gap-3">
             <span>{j.legs[0].operator}</span>
             <span>·</span>
-            <span>{j.changes} Umstiege</span>
+            <span>{j.changes} {t("search.changes")}</span>
             {hasDelay && <span className="delay-badge">+{Math.max(...j.legs.map((l) => l.delay_min))} min</span>}
-            {!hasDelay && <span className="delay-ok">Pünktlich</span>}
+            {!hasDelay && <span className="delay-ok">{t("search.on_time")}</span>}
           </div>
           <div className="mt-3 flex items-end gap-4 flex-wrap">
             <div>
@@ -299,15 +341,15 @@ export function JourneyCard({ j, onBook, onView }) {
           </div>
         </div>
         <div className="text-right">
-          <div className="eyebrow">ab</div>
+          <div className="eyebrow">{t("search.from_price")}</div>
           <div className="font-display text-4xl text-[#FDFBF7]">€{j.total_price.toFixed(0)}</div>
-          <div className="eyebrow">{j.passengers} Pers.</div>
+          <div className="eyebrow">{j.passengers} {t("common.persons")}</div>
         </div>
       </div>
       <div className="mt-5 flex gap-3 flex-wrap">
-        <button data-testid={`view-journey-${j.id}`} onClick={() => onView(j)} className="btn btn-ghost flex-1 sm:flex-none">Details + Live-Karte</button>
+        <button data-testid={`view-journey-${j.id}`} onClick={() => onView(j)} className="btn btn-ghost flex-1 sm:flex-none">{t("search.view")}</button>
         <button data-testid={`book-journey-${j.id}`} onClick={() => onBook(j)} className="btn btn-primary flex-1 sm:flex-none">
-          <Ticket size={16} weight="bold" /> In den Warenkorb
+          <Ticket size={16} weight="bold" /> {t("search.add_cart")}
         </button>
       </div>
     </article>
@@ -316,6 +358,7 @@ export function JourneyCard({ j, onBook, onView }) {
 
 // ============== Delay/Status pill ==============
 export function DelayPill({ minutes }) {
+  const { t } = useT();
   if (minutes && minutes > 0) return <span className="delay-badge">+{minutes} min</span>;
-  return <span className="delay-ok">pünktlich</span>;
+  return <span className="delay-ok">{t("search.on_time")}</span>;
 }

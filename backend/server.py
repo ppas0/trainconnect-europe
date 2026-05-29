@@ -136,14 +136,88 @@ SEED_STATIONS: List[Dict[str, Any]] = [
     {"id": "5400900", "name": "Ljubljana", "city": "Ljubljana", "country": "SI", "lat": 46.0586, "lon": 14.5099},
     {"id": "5401000", "name": "Beograd Centar", "city": "Beograd", "country": "RS", "lat": 44.8054, "lon": 20.4690},
     {"id": "8400001", "name": "Luxembourg", "city": "Luxembourg", "country": "LU", "lat": 49.6000, "lon": 6.1330},
+    # --- Phase 2 expansion: TR / Balkans / Baltics / UK regional / DE-FR-IT-ES deep ---
+    {"id": "TR00001", "name": "İstanbul Halkalı", "city": "İstanbul", "country": "TR", "lat": 41.0479, "lon": 28.7706},
+    {"id": "TR00002", "name": "İstanbul Sirkeci", "city": "İstanbul", "country": "TR", "lat": 41.0152, "lon": 28.9764},
+    {"id": "TR00003", "name": "Ankara YHT", "city": "Ankara", "country": "TR", "lat": 39.9376, "lon": 32.8400},
+    {"id": "TR00004", "name": "İzmir Basmane", "city": "İzmir", "country": "TR", "lat": 38.4181, "lon": 27.1395},
+    {"id": "MK00001", "name": "Skopje", "city": "Skopje", "country": "MK", "lat": 41.9904, "lon": 21.4475},
+    {"id": "BA00001", "name": "Sarajevo Glavna", "city": "Sarajevo", "country": "BA", "lat": 43.8624, "lon": 18.4045},
+    {"id": "AL00001", "name": "Tiranë (Bus-Konvoi)", "city": "Tiranë", "country": "AL", "lat": 41.3275, "lon": 19.8189},
+    {"id": "ME00001", "name": "Podgorica", "city": "Podgorica", "country": "ME", "lat": 42.4602, "lon": 19.2595},
+    {"id": "SE00010", "name": "Malmö C", "city": "Malmö", "country": "SE", "lat": 55.6093, "lon": 13.0007},
+    {"id": "SE00011", "name": "Uppsala C", "city": "Uppsala", "country": "SE", "lat": 59.8585, "lon": 17.6469},
+    {"id": "NO00010", "name": "Trondheim S", "city": "Trondheim", "country": "NO", "lat": 63.4366, "lon": 10.3989},
+    {"id": "NO00011", "name": "Tromsø (Bus-Anschluss)", "city": "Tromsø", "country": "NO", "lat": 69.6492, "lon": 18.9553},
+    {"id": "FI00010", "name": "Tampere", "city": "Tampere", "country": "FI", "lat": 61.4980, "lon": 23.7720},
+    {"id": "FI00011", "name": "Turku", "city": "Turku", "country": "FI", "lat": 60.4540, "lon": 22.2528},
+    {"id": "EE00001", "name": "Tallinn Balti jaam", "city": "Tallinn", "country": "EE", "lat": 59.4407, "lon": 24.7396},
+    {"id": "LV00001", "name": "Rīgas Centrālā", "city": "Rīga", "country": "LV", "lat": 56.9466, "lon": 24.1207},
+    {"id": "LT00001", "name": "Vilnius", "city": "Vilnius", "country": "LT", "lat": 54.6708, "lon": 25.2823},
+    {"id": "SK00001", "name": "Bratislava hl.st.", "city": "Bratislava", "country": "SK", "lat": 48.1593, "lon": 17.1063},
+    {"id": "GB00010", "name": "Manchester Piccadilly", "city": "Manchester", "country": "GB", "lat": 53.4774, "lon": -2.2309},
+    {"id": "GB00011", "name": "Birmingham New Street", "city": "Birmingham", "country": "GB", "lat": 52.4779, "lon": -1.8990},
+    {"id": "GB00012", "name": "Liverpool Lime Street", "city": "Liverpool", "country": "GB", "lat": 53.4076, "lon": -2.9772},
+    {"id": "GB00013", "name": "Glasgow Central", "city": "Glasgow", "country": "GB", "lat": 55.8587, "lon": -4.2576},
+    {"id": "GB00014", "name": "Cardiff Central", "city": "Cardiff", "country": "GB", "lat": 51.4759, "lon": -3.1791},
+    {"id": "GB00015", "name": "Bristol Temple Meads", "city": "Bristol", "country": "GB", "lat": 51.4490, "lon": -2.5810},
+    {"id": "GB00016", "name": "York", "city": "York", "country": "GB", "lat": 53.9582, "lon": -1.0934},
+    {"id": "IE00010", "name": "Cork Kent", "city": "Cork", "country": "IE", "lat": 51.9011, "lon": -8.4514},
+    {"id": "IE00011", "name": "Galway Ceannt", "city": "Galway", "country": "IE", "lat": 53.2731, "lon": -9.0467},
+    {"id": "DE00100", "name": "Düsseldorf Hbf", "city": "Düsseldorf", "country": "DE", "lat": 51.2199, "lon": 6.7942},
+    {"id": "DE00101", "name": "Hannover Hbf", "city": "Hannover", "country": "DE", "lat": 52.3768, "lon": 9.7414},
+    {"id": "DE00102", "name": "Bremen Hbf", "city": "Bremen", "country": "DE", "lat": 53.0832, "lon": 8.8133},
+    {"id": "DE00103", "name": "Dresden Hbf", "city": "Dresden", "country": "DE", "lat": 51.0399, "lon": 13.7322},
+    {"id": "DE00104", "name": "Mainz Hbf", "city": "Mainz", "country": "DE", "lat": 50.0010, "lon": 8.2589},
+    {"id": "DE00105", "name": "Karlsruhe Hbf", "city": "Karlsruhe", "country": "DE", "lat": 48.9938, "lon": 8.4006},
+    {"id": "DE00106", "name": "Freiburg(Brsg)Hbf", "city": "Freiburg", "country": "DE", "lat": 47.9974, "lon": 7.8410},
+    {"id": "DE00107", "name": "Augsburg Hbf", "city": "Augsburg", "country": "DE", "lat": 48.3650, "lon": 10.8855},
+    {"id": "FR00100", "name": "Bordeaux St-Jean", "city": "Bordeaux", "country": "FR", "lat": 44.8260, "lon": -0.5566},
+    {"id": "FR00101", "name": "Nantes", "city": "Nantes", "country": "FR", "lat": 47.2173, "lon": -1.5414},
+    {"id": "FR00102", "name": "Toulouse Matabiau", "city": "Toulouse", "country": "FR", "lat": 43.6113, "lon": 1.4534},
+    {"id": "FR00103", "name": "Strasbourg-Ville", "city": "Strasbourg", "country": "FR", "lat": 48.5851, "lon": 7.7344},
+    {"id": "FR00104", "name": "Lille Europe", "city": "Lille", "country": "FR", "lat": 50.6394, "lon": 3.0758},
+    {"id": "FR00105", "name": "Nice-Ville", "city": "Nice", "country": "FR", "lat": 43.7044, "lon": 7.2619},
+    {"id": "IT00010", "name": "Torino Porta Nuova", "city": "Torino", "country": "IT", "lat": 45.0625, "lon": 7.6783},
+    {"id": "IT00011", "name": "Bologna Centrale", "city": "Bologna", "country": "IT", "lat": 44.5057, "lon": 11.3431},
+    {"id": "IT00012", "name": "Verona Porta Nuova", "city": "Verona", "country": "IT", "lat": 45.4297, "lon": 10.9818},
+    {"id": "IT00013", "name": "Bari Centrale", "city": "Bari", "country": "IT", "lat": 41.1188, "lon": 16.8717},
+    {"id": "IT00014", "name": "Palermo Centrale", "city": "Palermo", "country": "IT", "lat": 38.1100, "lon": 13.3614},
+    {"id": "ES00010", "name": "València Joaquín Sorolla", "city": "València", "country": "ES", "lat": 39.4596, "lon": -0.3776},
+    {"id": "ES00011", "name": "Bilbao-Abando", "city": "Bilbao", "country": "ES", "lat": 43.2630, "lon": -2.9259},
+    {"id": "ES00012", "name": "Málaga María Zambrano", "city": "Málaga", "country": "ES", "lat": 36.7117, "lon": -4.4326},
+    {"id": "ES00013", "name": "Zaragoza Delicias", "city": "Zaragoza", "country": "ES", "lat": 41.6592, "lon": -0.9148},
+    {"id": "PL00010", "name": "Gdańsk Główny", "city": "Gdańsk", "country": "PL", "lat": 54.3552, "lon": 18.6440},
+    {"id": "PL00011", "name": "Poznań Główny", "city": "Poznań", "country": "PL", "lat": 52.4015, "lon": 16.9117},
+    {"id": "PL00012", "name": "Wrocław Główny", "city": "Wrocław", "country": "PL", "lat": 51.0985, "lon": 17.0364},
+    {"id": "NL00010", "name": "Utrecht Centraal", "city": "Utrecht", "country": "NL", "lat": 52.0890, "lon": 5.1098},
+    {"id": "NL00011", "name": "Den Haag Centraal", "city": "Den Haag", "country": "NL", "lat": 52.0810, "lon": 4.3247},
+    {"id": "BE00010", "name": "Antwerpen-Centraal", "city": "Antwerpen", "country": "BE", "lat": 51.2172, "lon": 4.4211},
+    {"id": "BE00011", "name": "Gent-Sint-Pieters", "city": "Gent", "country": "BE", "lat": 51.0359, "lon": 3.7106},
+    {"id": "BG00010", "name": "Plovdiv", "city": "Plovdiv", "country": "BG", "lat": 42.1396, "lon": 24.7426},
+    {"id": "RO00010", "name": "Cluj-Napoca", "city": "Cluj-Napoca", "country": "RO", "lat": 46.7820, "lon": 23.6244},
+    {"id": "HR00010", "name": "Split", "city": "Split", "country": "HR", "lat": 43.5085, "lon": 16.4451},
 ]
 
 TRUNK_ROUTES: List[List[str]] = [
-    ["7610155", "7610100", "7600100", "7100000", "8011160", "8100002", "8300050", "8300100", "5400600"],
-    ["7080001", "7160100", "7160200", "8727101", "8011160"],
-    ["5400076", "8800004", "8400058", "8011160"],
-    ["5500001", "5400076"],
-    ["8011160", "5400100", "5100001", "5400200", "5400300"],
+    # Norway → Sweden → Denmark → Germany → Austria → Italy → Greece corridor
+    ["NO00011", "NO00010", "7610155", "7610100", "7600100", "7100000", "8011160", "8100002", "8300050", "8300100", "5400600"],
+    # Iberia → France → Germany
+    ["7080001", "ES00012", "7160100", "ES00013", "7160200", "FR00105", "FR00101", "8727101", "8011160"],
+    # UK → EU via Eurostar + UK regional spine
+    ["GB00013", "GB00010", "GB00011", "5400076", "8800004", "8400058", "8011160"],
+    # Ireland → UK
+    ["IE00011", "IE00010", "5500001", "5400076"],
+    # Eastern Europe spine
+    ["8011160", "5400100", "SK00001", "5100001", "5400200", "RO00010", "5400300"],
+    # Baltic → Poland → Berlin
+    ["EE00001", "LV00001", "LT00001", "PL00010", "5100001", "8011160"],
+    # Turkey → Balkans → Austria
+    ["TR00003", "TR00001", "5400400", "BG00010", "5401000", "BA00001", "MK00001", "5400800", "8100002"],
+    # Skandinavien tief
+    ["FI00011", "FI00010", "7620100", "7600100", "SE00011", "SE00010", "7100000"],
+    # Mediterran West
+    ["IT00014", "IT00013", "8300100", "8300050", "IT00010", "FR00105", "FR00102", "7160200"],
 ]
 
 POPULAR_ROUTES = [
@@ -156,6 +230,74 @@ POPULAR_ROUTES = [
     {"from_id": "7160100", "to_id": "7160200", "label": "Madrid → Barcelona", "duration_min": 150, "price": 39.00},
     {"from_id": "7610100", "to_id": "7600100", "label": "Oslo → Stockholm", "duration_min": 360, "price": 69.00},
 ]
+
+# Map operator (and/or country) -> real booking URL for affiliate-style deep-link.
+# Search-style links (?from=&to=&date=) where supported.
+PROVIDER_LINKS: Dict[str, Dict[str, str]] = {
+    "DB ICE":        {"name": "Deutsche Bahn",   "search": "https://www.bahn.de/buchung/start?so={from_name}&zo={to_name}&hd={iso_date}", "home": "https://www.bahn.de"},
+    "SNCF TGV":      {"name": "SNCF Connect",    "search": "https://www.sncf-connect.com/app/home/search?origin={from_name}&destination={to_name}&outwardDate={iso_date}", "home": "https://www.sncf-connect.com"},
+    "ÖBB Railjet":   {"name": "ÖBB",             "search": "https://tickets.oebb.at/de/ticket?from={from_name}&to={to_name}&departure={iso_date}", "home": "https://www.oebb.at"},
+    "SBB IC":        {"name": "SBB Mobile",      "search": "https://www.sbb.ch/de.html?von={from_name}&nach={to_name}&datum={iso_date}", "home": "https://www.sbb.ch"},
+    "Trenitalia FR": {"name": "Trenitalia",      "search": "https://www.trenitalia.com/en.html", "home": "https://www.trenitalia.com"},
+    "Eurostar":      {"name": "Eurostar",        "search": "https://www.eurostar.com/uk-en/travel-info", "home": "https://www.eurostar.com"},
+    "Renfe AVE":     {"name": "Renfe",           "search": "https://www.renfe.com/es/en", "home": "https://www.renfe.com"},
+    "SJ":            {"name": "SJ Sweden",       "search": "https://www.sj.se/en/search-purchase/", "home": "https://www.sj.se"},
+    "Vy":            {"name": "Vy Norway",       "search": "https://www.vy.no/en", "home": "https://www.vy.no"},
+    "NS Intercity":  {"name": "NS",              "search": "https://www.ns.nl/en/journeyplanner", "home": "https://www.ns.nl"},
+    "DSB":           {"name": "DSB Denmark",     "search": "https://www.dsb.dk/en/", "home": "https://www.dsb.dk"},
+    "VR":            {"name": "VR Finland",      "search": "https://www.vr.fi/en", "home": "https://www.vr.fi"},
+    "CP":            {"name": "CP Portugal",     "search": "https://www.cp.pt/passageiros/en", "home": "https://www.cp.pt"},
+    "Irish Rail":    {"name": "Irish Rail",      "search": "https://www.irishrail.ie", "home": "https://www.irishrail.ie"},
+    "National Rail": {"name": "National Rail UK","search": "https://www.nationalrail.co.uk", "home": "https://www.nationalrail.co.uk"},
+    "PKP":           {"name": "PKP Intercity",   "search": "https://www.intercity.pl/en", "home": "https://www.intercity.pl"},
+    "ČD":            {"name": "České dráhy",     "search": "https://www.cd.cz/en", "home": "https://www.cd.cz"},
+    "MÁV":           {"name": "MÁV Hungary",     "search": "https://www.mavcsoport.hu/en", "home": "https://www.mavcsoport.hu"},
+    "Hellenic":      {"name": "Hellenic Train",  "search": "https://hellenictrain.gr/en", "home": "https://hellenictrain.gr"},
+    "TCDD":          {"name": "TCDD Türkiye",    "search": "https://ebilet.tcddtasimacilik.gov.tr/en", "home": "https://www.tcddtasimacilik.gov.tr"},
+    "ZSSK":          {"name": "ZSSK Slovakia",   "search": "https://www.zssk.sk/en/", "home": "https://www.zssk.sk"},
+    "CFR":           {"name": "CFR Călători",    "search": "https://www.cfrcalatori.ro/en/", "home": "https://www.cfrcalatori.ro"},
+    "BDŽ":           {"name": "BDŽ Bulgaria",    "search": "https://www.bdz.bg/en/", "home": "https://www.bdz.bg"},
+    "HŽPP":          {"name": "HŽ Putnički Croatia", "search": "https://www.hzpp.hr/en", "home": "https://www.hzpp.hr"},
+    "Eurail":        {"name": "Eurail Pass",     "search": "https://www.eurail.com", "home": "https://www.eurail.com"},
+}
+
+# Country fallback (when operator unknown)
+COUNTRY_PROVIDERS: Dict[str, str] = {
+    "DE": "DB ICE", "FR": "SNCF TGV", "AT": "ÖBB Railjet", "CH": "SBB IC", "IT": "Trenitalia FR",
+    "GB": "National Rail", "IE": "Irish Rail", "ES": "Renfe AVE", "PT": "CP", "SE": "SJ",
+    "NO": "Vy", "DK": "DSB", "FI": "VR", "NL": "NS Intercity", "BE": "Eurostar",
+    "LU": "Eurostar", "PL": "PKP", "CZ": "ČD", "HU": "MÁV", "SK": "ZSSK",
+    "RO": "CFR", "BG": "BDŽ", "GR": "Hellenic", "HR": "HŽPP", "SI": "ÖBB Railjet",
+    "RS": "MÁV", "MK": "Hellenic", "BA": "HŽPP", "ME": "HŽPP", "AL": "Eurail",
+    "TR": "TCDD", "EE": "VR", "LV": "PKP", "LT": "PKP",
+}
+
+
+def resolve_provider_links(journey: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Return one provider deep-link per unique country touched by the journey."""
+    seen_countries = set()
+    out: List[Dict[str, str]] = []
+    for leg in journey["legs"]:
+        # use country at start of each leg, plus final to-country
+        country = leg["from"]["country"]
+        if country in seen_countries:
+            continue
+        op_key = COUNTRY_PROVIDERS.get(country, "DB ICE")
+        info = PROVIDER_LINKS.get(op_key) or PROVIDER_LINKS["DB ICE"]
+        url = info["search"].format(
+            from_name=leg["from"]["name"],
+            to_name=leg["to"]["name"],
+            iso_date=leg["departure"][:10],
+        )
+        out.append({"operator": op_key, "name": info["name"], "country": country, "url": url, "leg": f"{leg['from']['city']} → {leg['to']['city']}"})
+        seen_countries.add(country)
+    # also add the final destination country if different
+    last = journey["legs"][-1]["to"]
+    if last["country"] not in seen_countries:
+        op_key = COUNTRY_PROVIDERS.get(last["country"], "DB ICE")
+        info = PROVIDER_LINKS.get(op_key) or PROVIDER_LINKS["DB ICE"]
+        out.append({"operator": op_key, "name": info["name"], "country": last["country"], "url": info["home"], "leg": f"{last['city']} ({last['country']})"})
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -452,12 +594,18 @@ async def me(user=Depends(current_user)):
 # ---------------------------------------------------------------------------
 # Stations
 # ---------------------------------------------------------------------------
+def _norm(s: str) -> str:
+    import unicodedata
+    # NFD decompose then strip combining marks for accent-insensitive search
+    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
+
+
 @api.get("/stations/search")
 async def stations_search(q: str, limit: int = 8):
-    q_low = q.strip().lower()
+    q_low = _norm(q.strip())
     if not q_low:
         return []
-    local = [s for s in SEED_STATIONS if q_low in s["name"].lower() or q_low in s["city"].lower() or q_low in s["country"].lower()]
+    local = [s for s in SEED_STATIONS if q_low in _norm(s["name"]) or q_low in _norm(s["city"]) or q_low in _norm(s["country"])]
     local = local[:limit]
     if len(local) >= limit:
         return local
@@ -565,6 +713,7 @@ async def journey_detail(journey_id: str):
     if not cached:
         raise HTTPException(404, "Journey not in cache. Re-run search.")
     cached["id"] = cached.pop("_id")
+    cached["provider_links"] = resolve_provider_links(cached)
     return cached
 
 
@@ -781,6 +930,7 @@ async def ticket_detail(ticket_id: str, user=Depends(current_user)):
     if j:
         j["id"] = j.pop("_id")
         t["journey"] = j
+        t["provider_links"] = resolve_provider_links(j)
     return t
 
 

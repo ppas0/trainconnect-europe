@@ -1,0 +1,41 @@
+{
+  "summary": "Phase 2 regression + new-features testing of TrainConnect Europe. 27/27 backend pytest cases pass (19 prior + 8 new). Frontend: i18n switcher DE/EN/IT verified (hero text + localStorage 'tc_lang' + document.documentElement.lang), provider deep-links section on journey detail renders 7 country-correct https links with target=_blank, popular-routes -> /search nav works without infinite loop, Stavanger->Athina 8-leg multi-leg still works, Ankara->Manchester cross-corridor search produces multi-leg journey, Stripe checkout still produces real test session. Fixed one small backend bug: stations/search?q=istanbul was returning 0 hits because Turkish 'İ' lowercases to 'i̇' (i + combining dot) which broke substring match - applied unicode NFD + Mn-strip normalization in /api/stations/search.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Global", "issues": ["index.html still has <link rel=preload> with unsupported 'as' value warning (carry-over from iteration 1, non-blocking)"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_trainconnect.py",
+    "/app/backend/tests/test_phase2.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional carry-over from iter 1) /search page header still missing from/to station names",
+    "(Optional carry-over from iter 1) Remove invalid <link rel=preload as=...> from index.html"
+  ],
+  "critical_code_review_comments": [
+    "Stations search now case+accent-insensitive (NFD + strip combining marks). Consider applying the same _norm helper to journey filtering or any other free-text lookups.",
+    "server.py grew to ~1012 lines after Phase 2 (PROVIDER_LINKS, COUNTRY_PROVIDERS, +60 stations, +4 trunk routes). Strongly recommend splitting into modules: data/seed_stations.py, data/trunk_routes.py, data/providers.py, services/journey_engine.py.",
+    "resolve_provider_links uses last['country'] - relies on every leg having a 'country' field; verified present via SEED_STATIONS lookup. Defensive default to 'DB ICE' if country missing - good.",
+    "provider_links are computed on GET /api/journeys/{id} - cached in JOURNEY_CACHE. Cache TTL not visible from grep; if missing, popular routes' provider links may grow unbounded over time. Worth adding TTL eviction.",
+    "Frontend i18n DICT is in i18n.jsx - 5 languages. Missing keys silently fall back to key string - consider logging missing keys in dev mode."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase2.py (new - 8 phase-2 specific tests)",
+    "/app/backend/server.py (added _norm helper and accent-insensitive station search)"
+  ],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% (all asked flows pass)"},
+  "test_credentials": "demo@trainconnect.eu / demo123 (re-used; auto-created via /api/auth/register fixture)",
+  "seed_data_creation": "Backend auto-seeds 114+ stations across 30+ countries on startup. No manual seeding needed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run `python -m pytest backend/tests/ -v` to execute all 27 backend tests. Frontend i18n switcher selector: [data-testid=lang-switcher-btn] then [data-testid=lang-opt-{code}] for code in de/en/fr/it/es. Popular route cards use data-testid=popular-{from_id}-{to_id} (not popular-route-*). Journey detail provider links: container [data-testid=provider-links], anchors [data-testid=provider-link-{i}]. Verified country->provider mapping: NO=Vy, SE=SJ, DK=DSB, DE=Deutsche Bahn, AT=ÖBB, IT=Trenitalia, GR=Hellenic Train.",
+  "rca of the issue": "BUG FIXED: /api/stations/search?q=istanbul returned [] because Python's str.lower() on Turkish 'İ' (U+0130) produces 'i' + U+0307 (combining dot above), not pure ascii 'i'. The substring check `'istanbul' in 'i̇stanbul'` therefore failed. FIX: introduced _norm() that NFD-decomposes then drops Unicode category Mn (combining marks) before lowercasing. Now both 'istanbul' and 'İstanbul' queries match. Verified by both pytest and live curl. All other 26 tests continue to pass after the change."
+}

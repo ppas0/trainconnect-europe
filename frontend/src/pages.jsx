@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe } from "@phosphor-icons/react";
+import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut } from "@phosphor-icons/react";
 import { trainApi, cartApi, ticketsApi, fmtTime, fmtDate, fmtDur, fmtPrice } from "./api";
 import { useAuth, useCart } from "./store";
+import { useT } from "./i18n";
 import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill } from "./components";
 
 // ============== HOME / Landing ==============
 export function Home() {
+  const { t } = useT();
   const { data: popular } = useQuery({ queryKey: ["popular"], queryFn: trainApi.popular });
   return (
     <div className="relative">
@@ -17,15 +19,13 @@ export function Home() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#050914]/80 via-[#050914]/95 to-[#050914]" />
         <div className="max-w-7xl mx-auto px-6 pt-20 pb-16 md:pt-32 md:pb-28">
           <div className="eyebrow flex items-center gap-3 text-[#E63946]">
-            <Lightning size={14} weight="fill" /> Live · 200+ Bahnhöfe · 30+ Länder
+            <Lightning size={14} weight="fill" /> {t("home.eyebrow")}
           </div>
           <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl uppercase mt-6 leading-[0.85]" data-testid="home-hero-title">
-            Ein Ticket.<br/>
-            <span className="text-[#FDFBF7]">Ganz Europa.</span>
+            {t("home.title1")}<br/>
+            <span className="text-[#FDFBF7]">{t("home.title2")}</span>
           </h1>
-          <p className="mt-6 max-w-xl text-[#9baeca] text-lg font-body">
-            Suche, vergleiche und buche Zugverbindungen von Dublin bis Athen. Live-Position des Zugs auf der Karte. Ein Warenkorb, ein Checkout.
-          </p>
+          <p className="mt-6 max-w-xl text-[#9baeca] text-lg font-body">{t("home.lead")}</p>
           <div className="mt-12 max-w-5xl">
             <SearchWidget />
           </div>
@@ -35,10 +35,10 @@ export function Home() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <div className="eyebrow">Vorschläge</div>
-            <h2 className="font-display text-3xl uppercase">Beliebte Verbindungen</h2>
+            <div className="eyebrow">{t("home.popular.eyebrow")}</div>
+            <h2 className="font-display text-3xl uppercase">{t("home.popular.title")}</h2>
           </div>
-          <Link to="/stations" className="btn btn-ghost">Alle Bahnhöfe →</Link>
+          <Link to="/stations" className="btn btn-ghost">{t("home.all_stations")}</Link>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {(popular || []).map((p, i) => (
@@ -47,7 +47,7 @@ export function Home() {
               <div className="eyebrow flex items-center gap-2"><Train size={12} weight="duotone" /> {p.from.country} → {p.to.country}</div>
               <div className="font-display text-2xl uppercase mt-3 leading-tight">{p.from.city}<br/>→ {p.to.city}</div>
               <div className="mt-4 flex justify-between items-end">
-                <div className="eyebrow">ab</div>
+                <div className="eyebrow">{t("search.from_price")}</div>
                 <div className="font-mono text-xl text-[#FDFBF7]">€{p.price.toFixed(0)}</div>
               </div>
             </Link>
@@ -57,9 +57,9 @@ export function Home() {
 
       <section className="max-w-7xl mx-auto px-6 pb-24 grid md:grid-cols-3 gap-6">
         {[
-          { icon: <Globe size={28} weight="duotone" />, t: "Pan-europäisch", d: "Daten aus DB, SNCF, ÖBB, SBB, Trenitalia, Renfe, Vy, MÁV und mehr – über HAFAS und OpenRailwayMap." },
-          { icon: <MapPin size={28} weight="duotone" />, t: "Live-Karte", d: "Sieh die aktuelle Position deines Zugs in Echtzeit auf der OpenRailwayMap-Karte." },
-          { icon: <Ticket size={28} weight="duotone" />, t: "Multi-Leg-Cart", d: "Mehrere Anschlüsse in einem Checkout. Stripe-Testmodus, eine PDF pro Strecke." },
+          { icon: <Globe size={28} weight="duotone" />, t: t("home.feat1.t"), d: t("home.feat1.d") },
+          { icon: <MapPin size={28} weight="duotone" />, t: t("home.feat2.t"), d: t("home.feat2.d") },
+          { icon: <Ticket size={28} weight="duotone" />, t: t("home.feat3.t"), d: t("home.feat3.d") },
         ].map((b, i) => (
           <div key={i} className="surface p-7" data-testid={`feature-${i}`}>
             <div className="text-[#E63946]">{b.icon}</div>
@@ -77,10 +77,10 @@ export function Search() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { add } = useCart();
+  const { t } = useT();
   const from_id = params.get("from_id");
   const to_id = params.get("to_id");
   const passengers = parseInt(params.get("passengers") || "1");
-  // Stable departure key (URL value, or "now" rounded to current minute on first mount)
   const departure = useMemo(() => params.get("departure") || new Date(Math.floor(Date.now() / 60000) * 60000).toISOString(), [params]);
   const [selectedJ, setSelectedJ] = useState(null);
 
@@ -90,7 +90,6 @@ export function Search() {
     enabled: !!from_id && !!to_id,
   });
 
-  // Derive station names from results (always available) or URL fallback
   const from_name = data?.results?.[0]?.from?.name || params.get("from_name") || from_id;
   const to_name = data?.results?.[0]?.to?.name || params.get("to_name") || to_id;
 
@@ -107,39 +106,40 @@ export function Search() {
     <div className="max-w-7xl mx-auto px-6 py-10">
       <div className="eyebrow flex gap-3 items-center"><ArrowRight size={12} /> {from_name} → {to_name}</div>
       <h1 className="font-display text-4xl uppercase mt-2">{from_name} <span className="text-[#E63946]">→</span> {to_name}</h1>
-      <div className="mt-2 eyebrow">{fmtDate(departure)} · {passengers} Pers. · {data?.data_source === "live" ? "Live" : "Kuratiert"}</div>
+      <div className="mt-2 eyebrow">{fmtDate(departure)} · {passengers} {t("common.persons")} · {data?.data_source === "live" ? t("search.live") : t("search.curated")}</div>
 
       <div className="mt-8 grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-4">
-          {isLoading && <div className="surface p-8 text-center text-[#9baeca]">Suche Verbindungen...</div>}
-          {error && <div className="surface p-8 text-center text-[#E63946]"><Warning size={20} /> Fehler bei der Suche</div>}
+          {isLoading && <div className="surface p-8 text-center text-[#9baeca]">{t("search.loading")}</div>}
+          {error && <div className="surface p-8 text-center text-[#E63946]"><Warning size={20} /> {t("search.error")}</div>}
           {data?.results?.map((j) => (
             <JourneyCard key={j.id} j={j} onBook={onBook} onView={(jj) => { setSelectedJ(jj); navigate(`/journey/${jj.id}`); }} />
           ))}
         </div>
         <div className="lg:col-span-2 surface min-h-[500px] overflow-hidden" style={{ height: "calc(100vh - 200px)" }}>
-          {selectedJ ? <RouteMap journey={selectedJ} /> : <div className="h-full flex items-center justify-center text-[#9baeca]">Wähle eine Verbindung</div>}
+          {selectedJ ? <RouteMap journey={selectedJ} /> : <div className="h-full flex items-center justify-center text-[#9baeca]">{t("search.choose")}</div>}
         </div>
       </div>
     </div>
   );
 }
 
-// ============== Journey Detail (timeline + live map) ==============
+// ============== Journey Detail (timeline + live map + provider deep links) ==============
 export function JourneyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { add } = useCart();
+  const { t } = useT();
   const { data: j } = useQuery({ queryKey: ["journey", id], queryFn: () => trainApi.journey(id) });
   const { data: live } = useQuery({ queryKey: ["live", id], queryFn: () => trainApi.journeyLive(id), refetchInterval: 30000, enabled: !!j });
 
-  if (!j) return <div className="max-w-7xl mx-auto px-6 py-20 text-center text-[#9baeca]">Lade Verbindung...</div>;
+  if (!j) return <div className="max-w-7xl mx-auto px-6 py-20 text-center text-[#9baeca]">{t("jd.loading")}</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="eyebrow">Verbindung</div>
+      <div className="eyebrow">{t("jd.heading")}</div>
       <h1 className="font-display text-4xl uppercase">{j.from.city} <span className="text-[#E63946]">→</span> {j.to.city}</h1>
-      <div className="eyebrow mt-2">{fmtDate(j.departure)} · Dauer: {fmtDur(j.duration_min)} · {j.changes} Umstiege</div>
+      <div className="eyebrow mt-2">{fmtDate(j.departure)} · {t("jd.duration")}: {fmtDur(j.duration_min)} · {j.changes} {t("search.changes")}</div>
 
       <div className="grid lg:grid-cols-5 gap-6 mt-8">
         <div className="lg:col-span-2 space-y-1">
@@ -148,14 +148,14 @@ export function JourneyDetail() {
             return (
               <div key={leg.leg_id} className="surface p-5" data-testid={`leg-${idx}`}>
                 <div className="eyebrow flex justify-between">
-                  <span>Etappe {idx + 1}</span>
+                  <span>{t("jd.leg")} {idx + 1}</span>
                   <span>{leg.operator} · {leg.train_no}</span>
                 </div>
                 <div className="mt-3 flex justify-between items-start gap-4">
                   <div>
                     <div className="font-mono text-2xl">{fmtTime(leg.departure)}</div>
                     <div className="text-sm">{leg.from.name}</div>
-                    <div className="eyebrow mt-1">Gleis {leg.platform}</div>
+                    <div className="eyebrow mt-1">{t("jd.platform")} {leg.platform}</div>
                   </div>
                   <div className="text-center">
                     <div className="eyebrow">{fmtDur(leg.duration_min)}</div>
@@ -169,7 +169,7 @@ export function JourneyDetail() {
                 </div>
                 {liveLeg && liveLeg.status === "in_transit" && (
                   <div className="mt-3">
-                    <div className="eyebrow text-[#E63946]">● Live · {Math.round(liveLeg.progress * 100)}% unterwegs</div>
+                    <div className="eyebrow text-[#E63946]">● {t("search.live")} · {Math.round(liveLeg.progress * 100)}% {t("jd.live_progress")}</div>
                     <div className="h-1 bg-[#0c152b] mt-1 relative">
                       <div className="absolute top-0 left-0 h-1 bg-[#E63946]" style={{ width: `${liveLeg.progress * 100}%` }} />
                     </div>
@@ -180,13 +180,33 @@ export function JourneyDetail() {
           })}
           <div className="surface p-5 flex items-center justify-between">
             <div>
-              <div className="eyebrow">Gesamtpreis</div>
+              <div className="eyebrow">{t("jd.total")}</div>
               <div className="font-display text-3xl">{fmtPrice(j.total_price)}</div>
             </div>
             <button data-testid="add-to-cart-btn" className="btn btn-primary" onClick={() => { add(j.id, j.passengers, { from: j.from.name, to: j.to.name, departure: j.departure, price: j.total_price }); navigate("/cart"); }}>
-              <Ticket size={16} weight="bold" /> In den Warenkorb
+              <Ticket size={16} weight="bold" /> {t("search.add_cart")}
             </button>
           </div>
+
+          {j.provider_links?.length > 0 && (
+            <div className="surface p-5" data-testid="provider-links">
+              <div className="eyebrow flex items-center gap-2"><Globe size={12} /> {t("jd.providers")}</div>
+              <div className="text-xs text-[#9baeca] mt-2 font-body">{t("jd.providers_note")}</div>
+              <div className="mt-3 grid gap-2">
+                {j.provider_links.map((p, i) => (
+                  <a key={i} href={p.url} target="_blank" rel="noopener noreferrer"
+                     data-testid={`provider-link-${i}`}
+                     className="flex items-center justify-between gap-3 border border-[#1a2d5e] hover:border-[#E63946] px-3 py-2 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-sm uppercase tracking-wider">{p.name}</div>
+                      <div className="eyebrow truncate">{p.leg}</div>
+                    </div>
+                    <ArrowSquareOut size={16} color="#9baeca" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="lg:col-span-3 surface overflow-hidden" style={{ height: "calc(100vh - 200px)" }}>
           <RouteMap journey={j} livePositions={live?.legs} />
@@ -198,12 +218,13 @@ export function JourneyDetail() {
 
 // ============== Stations Overview ==============
 export function Stations() {
+  const { t } = useT();
   const { data: stations } = useQuery({ queryKey: ["stations"], queryFn: trainApi.allStations });
   const [selected, setSelected] = useState(null);
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="eyebrow">Netz</div>
-      <h1 className="font-display text-4xl uppercase">Bahnhöfe in Europa</h1>
+      <div className="eyebrow">{t("st.network")}</div>
+      <h1 className="font-display text-4xl uppercase">{t("st.title")}</h1>
       <div className="mt-6 grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-2 surface max-h-[70vh] overflow-auto scrollbar-thin">
           {(stations || []).map((s) => (
@@ -228,15 +249,16 @@ export function Stations() {
 }
 
 function StationPanel({ station }) {
+  const { t } = useT();
   const { data } = useQuery({ queryKey: ["dep", station.id], queryFn: () => trainApi.stationDepartures(station.id), refetchInterval: 60000 });
   return (
     <div className="mt-8 surface p-6">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <div className="eyebrow">Nächste Abfahrten</div>
+          <div className="eyebrow">{t("st.departures")}</div>
           <h3 className="font-display text-2xl uppercase">{station.name}</h3>
         </div>
-        <span className="eyebrow">{data?.data_source === "live" ? "● Live" : "Kuratiert"}</span>
+        <span className="eyebrow">{data?.data_source === "live" ? `● ${t("search.live")}` : t("search.curated")}</span>
       </div>
       <div className="mt-4 grid gap-2">
         {(data?.departures || []).map((d, i) => (
@@ -244,7 +266,7 @@ function StationPanel({ station }) {
             <div className="font-mono text-xl w-16">{fmtTime(d.when)}</div>
             <div className="font-mono text-xs text-[#9baeca] w-24">{d.line}</div>
             <div className="flex-1 text-sm">→ {d.direction}</div>
-            <div className="eyebrow w-16 text-right">Gl. {d.platform || "—"}</div>
+            <div className="eyebrow w-16 text-right">{t("st.platform_short")} {d.platform || "—"}</div>
             <DelayPill minutes={d.delay_min} />
           </div>
         ))}
@@ -257,6 +279,7 @@ function StationPanel({ station }) {
 export function Cart() {
   const { items, remove, setPassengers, clear } = useCart();
   const { user } = useAuth();
+  const { t } = useT();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -271,7 +294,7 @@ export function Cart() {
       const session = await cartApi.checkout(cart.id);
       window.location.href = session.url;
     } catch (e) {
-      setError(e?.response?.data?.detail || "Checkout fehlgeschlagen");
+      setError(e?.response?.data?.detail || t("search.error"));
       setSubmitting(false);
     }
   };
@@ -280,17 +303,17 @@ export function Cart() {
     return (
       <div className="max-w-3xl mx-auto px-6 py-20 text-center">
         <Ticket size={48} weight="duotone" className="mx-auto text-[#9baeca]" />
-        <h1 className="font-display text-4xl uppercase mt-6">Warenkorb leer</h1>
-        <p className="text-[#9baeca] mt-2">Suche eine Verbindung und füge sie hinzu.</p>
-        <Link to="/" className="btn btn-primary mt-6">Verbindungen suchen</Link>
+        <h1 className="font-display text-4xl uppercase mt-6">{t("cart.empty.title")}</h1>
+        <p className="text-[#9baeca] mt-2">{t("cart.empty.lead")}</p>
+        <Link to="/" className="btn btn-primary mt-6">{t("cart.empty.cta")}</Link>
       </div>
     );
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <div className="eyebrow">Checkout</div>
-      <h1 className="font-display text-4xl uppercase">Warenkorb</h1>
-      <div className="mt-2 demo-badge">Stripe Testmodus · Karte 4242 4242 4242 4242</div>
+      <div className="eyebrow">{t("cart.checkout_label")}</div>
+      <h1 className="font-display text-4xl uppercase">{t("cart.title")}</h1>
+      <div className="mt-2 demo-badge">{t("cart.demo_badge")}</div>
 
       <div className="mt-8 grid gap-4">
         {items.map((it) => (
@@ -300,31 +323,31 @@ export function Cart() {
               <div className="eyebrow mt-1">{fmtDate(it.departure)} · {fmtTime(it.departure)}</div>
             </div>
             <div className="flex items-center gap-2">
-              <label className="field-label">Pers.</label>
+              <label className="field-label">{t("form.pax")}</label>
               <input data-testid={`cart-pax-${it.journey_id}`} type="number" min={1} max={9} value={it.passengers}
                      onChange={(e) => setPassengers(it.journey_id, parseInt(e.target.value || "1"))}
                      className="field-input w-16 text-center" />
             </div>
             <div className="font-mono text-xl w-24 text-right">{fmtPrice(it.price)}</div>
-            <button data-testid={`cart-remove-${it.journey_id}`} onClick={() => remove(it.journey_id)} className="btn btn-ghost">Entfernen</button>
+            <button data-testid={`cart-remove-${it.journey_id}`} onClick={() => remove(it.journey_id)} className="btn btn-ghost">{t("cart.remove")}</button>
           </div>
         ))}
       </div>
 
       <div className="mt-8 surface p-6 flex justify-between items-center flex-wrap gap-4">
         <div>
-          <div className="eyebrow">Gesamt</div>
+          <div className="eyebrow">{t("cart.total")}</div>
           <div className="font-display text-4xl">{fmtPrice(total)}</div>
         </div>
         <div className="flex gap-3 flex-wrap">
-          <button onClick={clear} className="btn btn-ghost">Leeren</button>
+          <button onClick={clear} className="btn btn-ghost">{t("cart.clear")}</button>
           <button data-testid="checkout-btn" disabled={submitting} onClick={onCheckout} className="btn btn-primary">
-            <Lock size={16} weight="bold" /> {submitting ? "Weiterleiten..." : "Zur Kasse (Stripe Test)"}
+            <Lock size={16} weight="bold" /> {submitting ? t("cart.paying") : t("cart.pay")}
           </button>
         </div>
       </div>
       {error && <div className="mt-4 surface p-4 text-[#E63946]">{error}</div>}
-      {!user && <div className="mt-4 text-sm text-[#9baeca]">Hinweis: <Link to="/login" className="underline">Logge dich ein</Link>, damit Tickets in deinem Konto erscheinen.</div>}
+      {!user && <div className="mt-4 text-sm text-[#9baeca]">{t("cart.login_hint").replace("Logge dich ein", "")} <Link to="/login" className="underline">{t("nav.login")}</Link></div>}
     </div>
   );
 }
@@ -334,13 +357,14 @@ export function CheckoutSuccess() {
   const [params] = useSearchParams();
   const session_id = params.get("session_id");
   const { clear } = useCart();
+  const { t } = useT();
   const [status, setStatus] = useState("pending");
   const [attempts, setAttempts] = useState(0);
 
   useEffect(() => {
     if (!session_id || status === "paid") return;
     if (attempts > 8) { setStatus("timeout"); return; }
-    const t = setTimeout(async () => {
+    const tt = setTimeout(async () => {
       try {
         const r = await cartApi.status(session_id);
         if (r.payment_status === "paid") { setStatus("paid"); clear(); }
@@ -348,7 +372,7 @@ export function CheckoutSuccess() {
         else setAttempts((a) => a + 1);
       } catch { setAttempts((a) => a + 1); }
     }, 2000);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tt);
   }, [session_id, attempts, status, clear]);
 
   return (
@@ -356,23 +380,23 @@ export function CheckoutSuccess() {
       {status === "paid" && (
         <>
           <Ticket size={56} weight="duotone" className="mx-auto text-[#E63946]" />
-          <h1 className="font-display text-5xl uppercase mt-6" data-testid="checkout-success-title">Buchung bestätigt</h1>
-          <p className="text-[#9baeca] mt-3 font-body">Dein Ticket ist im Konto. Lade die PDF herunter oder zeige sie am Bahnhof.</p>
-          <Link to="/tickets" className="btn btn-primary mt-8">Meine Tickets ansehen</Link>
+          <h1 className="font-display text-5xl uppercase mt-6" data-testid="checkout-success-title">{t("cs.paid.title")}</h1>
+          <p className="text-[#9baeca] mt-3 font-body">{t("cs.paid.lead")}</p>
+          <Link to="/tickets" className="btn btn-primary mt-8">{t("cs.paid.cta")}</Link>
         </>
       )}
       {status === "pending" && (
         <>
           <Clock size={56} weight="duotone" className="mx-auto text-[#9baeca]" />
-          <h1 className="font-display text-3xl uppercase mt-6">Zahlung wird geprüft...</h1>
-          <p className="text-[#9baeca] mt-2 font-body">Versuch {attempts + 1} von 9</p>
+          <h1 className="font-display text-3xl uppercase mt-6">{t("cs.pending")}</h1>
+          <p className="text-[#9baeca] mt-2 font-body">{t("cs.attempt")} {attempts + 1} / 9</p>
         </>
       )}
       {(status === "expired" || status === "timeout") && (
         <>
           <Warning size={56} weight="duotone" className="mx-auto text-[#E63946]" />
-          <h1 className="font-display text-3xl uppercase mt-6">Zahlung nicht bestätigt</h1>
-          <Link to="/cart" className="btn mt-6">Zurück zum Warenkorb</Link>
+          <h1 className="font-display text-3xl uppercase mt-6">{t("cs.failed")}</h1>
+          <Link to="/cart" className="btn mt-6">{t("cs.back")}</Link>
         </>
       )}
     </div>
@@ -382,30 +406,31 @@ export function CheckoutSuccess() {
 // ============== Tickets ==============
 export function Tickets() {
   const { user } = useAuth();
+  const { t } = useT();
   const { data } = useQuery({ queryKey: ["tickets"], queryFn: ticketsApi.list, enabled: !!user });
   if (!user)
     return (
       <div className="max-w-xl mx-auto px-6 py-20 text-center">
         <Lock size={48} className="mx-auto text-[#9baeca]" />
-        <h1 className="font-display text-3xl uppercase mt-4">Login erforderlich</h1>
-        <Link to="/login" className="btn btn-primary mt-6">Einloggen</Link>
+        <h1 className="font-display text-3xl uppercase mt-4">{t("tk.login_required")}</h1>
+        <Link to="/login" className="btn btn-primary mt-6">{t("nav.login")}</Link>
       </div>
     );
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <div className="eyebrow">Konto</div>
-      <h1 className="font-display text-4xl uppercase">Meine Tickets</h1>
+      <div className="eyebrow">{t("tk.account")}</div>
+      <h1 className="font-display text-4xl uppercase">{t("tk.title")}</h1>
       <div className="mt-8 grid gap-4">
-        {(data || []).length === 0 && <div className="surface p-8 text-center text-[#9baeca]">Noch keine Tickets gebucht.</div>}
-        {(data || []).map((t) => (
-          <div key={t.id} className="surface p-5 flex justify-between items-center gap-4 flex-wrap" data-testid={`ticket-${t.id}`}>
+        {(data || []).length === 0 && <div className="surface p-8 text-center text-[#9baeca]">{t("tk.none")}</div>}
+        {(data || []).map((tk) => (
+          <div key={tk.id} className="surface p-5 flex justify-between items-center gap-4 flex-wrap" data-testid={`ticket-${tk.id}`}>
             <div className="flex-1 min-w-[200px]">
-              <div className="eyebrow">{t.pnr} · {t.status}</div>
-              <div className="font-display text-xl uppercase mt-1">{t.from} → {t.to}</div>
-              <div className="eyebrow mt-1">{fmtDate(t.departure)} · {fmtTime(t.departure)} · {t.passengers} Pers.</div>
+              <div className="eyebrow">{tk.pnr} · {tk.status}</div>
+              <div className="font-display text-xl uppercase mt-1">{tk.from} → {tk.to}</div>
+              <div className="eyebrow mt-1">{fmtDate(tk.departure)} · {fmtTime(tk.departure)} · {tk.passengers} {t("common.persons")}</div>
             </div>
-            <div className="font-mono text-xl">{fmtPrice(t.price)}</div>
-            <a data-testid={`ticket-pdf-${t.id}`} href={ticketsApi.pdfUrl(t.id) + "?token=" + (localStorage.getItem("tc_token") || "")} className="btn btn-ghost" target="_blank" rel="noopener noreferrer">
+            <div className="font-mono text-xl">{fmtPrice(tk.price)}</div>
+            <a data-testid={`ticket-pdf-${tk.id}`} href={ticketsApi.pdfUrl(tk.id) + "?token=" + (localStorage.getItem("tc_token") || "")} className="btn btn-ghost" target="_blank" rel="noopener noreferrer">
               <FilePdf size={16} weight="bold" /> PDF
             </a>
           </div>
@@ -418,8 +443,8 @@ export function Tickets() {
 // ============== Auth (Login/Register) ==============
 export function AuthPage({ mode = "login" }) {
   const { login, register, user } = useAuth();
+  const { t } = useT();
   const navigate = useNavigate();
-  const loc = useLocation();
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [err, setErr] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -434,36 +459,36 @@ export function AuthPage({ mode = "login" }) {
       else await register(form);
       navigate("/", { replace: true });
     } catch (ex) {
-      setErr(ex?.response?.data?.detail || "Fehler bei Anmeldung");
+      setErr(ex?.response?.data?.detail || t("search.error"));
     } finally { setLoading(false); }
   };
 
   return (
     <div className="max-w-md mx-auto px-6 py-20">
-      <div className="eyebrow">{mode === "login" ? "Anmeldung" : "Registrierung"}</div>
-      <h1 className="font-display text-4xl uppercase mt-2">{mode === "login" ? "Einloggen" : "Konto erstellen"}</h1>
+      <div className="eyebrow">{mode === "login" ? t("auth.login") : t("auth.register")}</div>
+      <h1 className="font-display text-4xl uppercase mt-2">{mode === "login" ? t("auth.login_h") : t("auth.register_h")}</h1>
       <form onSubmit={onSubmit} className="mt-8 surface p-6 space-y-5">
         {mode === "register" && (
           <div className="field">
-            <label className="field-label">Name</label>
+            <label className="field-label">{t("auth.name")}</label>
             <input data-testid="auth-name" className="field-input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
         )}
         <div className="field">
-          <label className="field-label">E-Mail</label>
+          <label className="field-label">{t("auth.email")}</label>
           <input data-testid="auth-email" type="email" required className="field-input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
         <div className="field">
-          <label className="field-label">Passwort</label>
+          <label className="field-label">{t("auth.password")}</label>
           <input data-testid="auth-password" type="password" required minLength={6} className="field-input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </div>
         {err && <div className="text-[#E63946] text-sm font-mono">{err}</div>}
-        <button data-testid="auth-submit" disabled={loading} className="btn btn-primary btn-block">{loading ? "..." : (mode === "login" ? "Einloggen" : "Konto erstellen")}</button>
+        <button data-testid="auth-submit" disabled={loading} className="btn btn-primary btn-block">{loading ? "..." : (mode === "login" ? t("auth.login_h") : t("auth.register_h"))}</button>
         <div className="text-center text-sm text-[#9baeca]">
           {mode === "login" ? (
-            <>Kein Konto? <Link to="/register" className="underline">Registrieren</Link></>
+            <>{t("auth.no_acc")} <Link to="/register" className="underline">{t("auth.signup_link")}</Link></>
           ) : (
-            <>Schon registriert? <Link to="/login" className="underline">Einloggen</Link></>
+            <>{t("auth.has_acc")} <Link to="/login" className="underline">{t("auth.signin_link")}</Link></>
           )}
         </div>
       </form>
