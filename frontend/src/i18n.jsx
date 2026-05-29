@@ -19,7 +19,7 @@ export const DICT = {
   "nav.logout": { de: "Ausloggen", en: "Log out", fr: "Déconnexion", it: "Esci", es: "Salir" },
 
   // Home / Hero
-  "home.eyebrow": { de: "Live · 200+ Bahnhöfe · 30+ Länder", en: "Live · 200+ stations · 30+ countries", fr: "Direct · 200+ gares · 30+ pays", it: "Live · 200+ stazioni · 30+ paesi", es: "En vivo · 200+ estaciones · 30+ países" },
+  "home.eyebrow": { de: "Live · 51.000+ Bahnhöfe · 34 Länder", en: "Live · 51,000+ stations · 34 countries", fr: "Direct · 51 000+ gares · 34 pays", it: "Live · 51.000+ stazioni · 34 paesi", es: "En vivo · 51.000+ estaciones · 34 países" },
   "home.title1": { de: "Ein Ticket.", en: "One ticket.", fr: "Un billet.", it: "Un biglietto.", es: "Un billete." },
   "home.title2": { de: "Ganz Europa.", en: "All of Europe.", fr: "Toute l'Europe.", it: "Tutta l'Europa.", es: "Toda Europa." },
   "home.lead": {

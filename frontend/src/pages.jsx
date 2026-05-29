@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut } from "@phosphor-icons/react";
+import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut, AppleLogo, CalendarPlus, Funnel } from "@phosphor-icons/react";
 import { trainApi, cartApi, ticketsApi, affiliateApi, fmtTime, fmtDate, fmtDur, fmtPrice } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT } from "./i18n";
@@ -414,7 +414,9 @@ export function Tickets() {
       <h1 className="font-display text-4xl uppercase">{t("tk.title")}</h1>
       <div className="mt-8 grid gap-4">
         {(data || []).length === 0 && <div className="surface p-8 text-center text-[#9baeca]">{t("tk.none")}</div>}
-        {(data || []).map((tk) => (
+        {(data || []).map((tk) => {
+          const tok = (localStorage.getItem("tc_token") || "");
+          return (
           <div key={tk.id} className="surface p-5 flex justify-between items-center gap-4 flex-wrap" data-testid={`ticket-${tk.id}`}>
             <div className="flex-1 min-w-[200px]">
               <div className="eyebrow">{tk.pnr} · {tk.status}</div>
@@ -422,11 +424,20 @@ export function Tickets() {
               <div className="eyebrow mt-1">{fmtDate(tk.departure)} · {fmtTime(tk.departure)} · {tk.passengers} {t("common.persons")}</div>
             </div>
             <div className="font-mono text-xl">{fmtPrice(tk.price)}</div>
-            <a data-testid={`ticket-pdf-${tk.id}`} href={ticketsApi.pdfUrl(tk.id) + "?token=" + (localStorage.getItem("tc_token") || "")} className="btn btn-ghost" target="_blank" rel="noopener noreferrer">
-              <FilePdf size={16} weight="bold" /> PDF
-            </a>
+            <div className="flex gap-2 flex-wrap">
+              <a data-testid={`ticket-pdf-${tk.id}`} href={ticketsApi.pdfUrl(tk.id) + "?token=" + tok} className="btn btn-ghost !py-2 !px-3" target="_blank" rel="noopener noreferrer">
+                <FilePdf size={14} weight="bold" /> PDF
+              </a>
+              <a data-testid={`ticket-ics-${tk.id}`} href={ticketsApi.icsUrl(tk.id) + "?token=" + tok} className="btn btn-ghost !py-2 !px-3" target="_blank" rel="noopener noreferrer" title="In Kalender (iOS/Google/Outlook)">
+                <CalendarPlus size={14} weight="bold" /> .ics
+              </a>
+              <a data-testid={`ticket-pkpass-${tk.id}`} href={ticketsApi.pkpassUrl(tk.id) + "?token=" + tok} className="btn btn-ghost !py-2 !px-3" target="_blank" rel="noopener noreferrer" title="Apple Wallet (unsigned demo)">
+                <AppleLogo size={14} weight="bold" /> Wallet
+              </a>
+            </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -470,6 +481,15 @@ function ProviderLink({ p, idx, journeyId }) {
 }
 
 // ============== Affiliate Dashboard ==============
+function FunnelStep({ label, value }) {
+  return (
+    <div className="border border-[#1a2d5e] p-3">
+      <div className="eyebrow">{label}</div>
+      <div className="font-display text-3xl mt-1">{value}</div>
+    </div>
+  );
+}
+
 export function AffiliateDashboard() {
   const { user } = useAuth();
   const { t } = useT();
@@ -518,6 +538,41 @@ export function AffiliateDashboard() {
           <div className="font-display text-4xl mt-2">{data.by_country.length}</div>
         </div>
       </div>
+
+      {data.funnel && (
+        <div className="mt-10 surface p-6" data-testid="funnel">
+          <h2 className="font-display text-2xl uppercase flex items-center gap-2"><Funnel size={22} weight="duotone" /> Conversion-Funnel</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            <FunnelStep label="Suchen" value={data.funnel.searches} />
+            <FunnelStep label="Warenkorb-Adds" value={data.funnel.cart_adds} />
+            <FunnelStep label="Anbieter-Klicks" value={data.funnel.outbound_clicks} />
+            <FunnelStep label="Bezahlte Checkouts" value={data.funnel.paid_checkouts} />
+          </div>
+          <div className="mt-5 flex flex-wrap gap-6 text-sm">
+            <div>
+              <div className="eyebrow">Search → Click Rate</div>
+              <div className="font-mono text-2xl text-[#E63946]">{data.funnel.search_to_click_rate}%</div>
+            </div>
+            <div>
+              <div className="eyebrow">Click → Paid Rate</div>
+              <div className="font-mono text-2xl text-[#E63946]">{data.funnel.click_to_paid_rate}%</div>
+            </div>
+          </div>
+          {data.missed_routes?.length > 0 && (
+            <div className="mt-6">
+              <div className="eyebrow text-[#E63946]">⚠ Verpasste Chancen (oft gesucht, nie geklickt)</div>
+              <div className="mt-2 grid gap-1">
+                {data.missed_routes.map((m, i) => (
+                  <div key={i} className="flex justify-between text-sm border-b border-[#1a2d5e] py-1">
+                    <span className="truncate">{m.route}</span>
+                    <span className="font-mono text-[#9baeca]">{m.searches}x gesucht</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-10 grid md:grid-cols-3 gap-6">
         <div className="surface p-5">

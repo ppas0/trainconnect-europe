@@ -12,10 +12,15 @@ All endpoints are prefixed with /api so Kubernetes ingress routes them.
 """
 from __future__ import annotations
 
+import csv
 import io
+import json
 import os
 import uuid
 import logging
+import asyncio
+import zipfile
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any, Dict, List, Optional
 
@@ -272,6 +277,10 @@ COUNTRY_PROVIDERS: Dict[str, str] = {
     "TR": "TCDD", "EE": "VR", "LV": "PKP", "LT": "PKP",
 }
 
+# European countries we accept for the bulk station import (everything else is filtered out)
+EU_COUNTRIES = set(COUNTRY_PROVIDERS.keys())
+TRAINLINE_CSV_URL = "https://raw.githubusercontent.com/trainline-eu/stations/master/stations.csv"
+
 
 def resolve_provider_links(journey: Dict[str, Any]) -> List[Dict[str, str]]:
     """Return one provider deep-link per unique country touched by the journey."""
@@ -342,6 +351,13 @@ class CheckoutIn(BaseModel):
 oauth2 = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
+async def _token_from_request(request: Request, header_token: Optional[str]) -> Optional[str]:
+    """Get JWT from Authorization header OR ?token= query (for direct browser downloads)."""
+    if header_token:
+        return header_token
+    return request.query_params.get("token")
+
+
 def _hash_pw(pw: str) -> str:
     return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
 
@@ -362,11 +378,12 @@ def _make_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
 
 
-async def current_user(token: Optional[str] = Depends(oauth2)) -> Dict[str, Any]:
-    if not token:
+async def current_user(request: Request, token: Optional[str] = Depends(oauth2)) -> Dict[str, Any]:
+    tok = await _token_from_request(request, token)
+    if not tok:
         raise HTTPException(401, "Missing token")
     try:
-        data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        data = jwt.decode(tok, JWT_SECRET, algorithms=[JWT_ALG])
     except jwt.PyJWTError:
         raise HTTPException(401, "Invalid token")
     user = await db.users.find_one({"_id": data["sub"]})
@@ -377,11 +394,9 @@ async def current_user(token: Optional[str] = Depends(oauth2)) -> Dict[str, Any]
     return user
 
 
-async def optional_user(token: Optional[str] = Depends(oauth2)) -> Optional[Dict[str, Any]]:
-    if not token:
-        return None
+async def optional_user(request: Request, token: Optional[str] = Depends(oauth2)) -> Optional[Dict[str, Any]]:
     try:
-        return await current_user(token)
+        return await current_user(request, token)
     except HTTPException:
         return None
 
@@ -403,6 +418,77 @@ async def transport_get(path: str, params: Optional[Dict[str, Any]] = None) -> O
 
 
 # ---------------------------------------------------------------------------
+# Bulk-import: trainline-eu/stations -> MongoDB collection `eu_stations`
+# ---------------------------------------------------------------------------
+async def import_trainline_stations(limit: Optional[int] = None) -> Dict[str, Any]:
+    """Stream the trainline CSV and bulk insert European, suggestable stations."""
+    inserted = 0
+    skipped = 0
+    timeout = httpx.Timeout(60.0, connect=15.0)
+    async with httpx.AsyncClient(timeout=timeout) as cli:
+        resp = await cli.get(TRAINLINE_CSV_URL)
+        if resp.status_code != 200:
+            raise HTTPException(503, f"Trainline CSV unreachable: {resp.status_code}")
+        text = resp.text
+    reader = csv.DictReader(io.StringIO(text), delimiter=";")
+    batch: List[Dict[str, Any]] = []
+    for row in reader:
+        country = (row.get("country") or "").upper()
+        if country not in EU_COUNTRIES:
+            skipped += 1
+            continue
+        if (row.get("is_suggestable") or "").strip() != "t":
+            skipped += 1
+            continue
+        try:
+            lat = float(row["latitude"])
+            lon = float(row["longitude"])
+        except (KeyError, ValueError):
+            skipped += 1
+            continue
+        name = (row.get("name") or "").strip()
+        if not name:
+            skipped += 1
+            continue
+        sid = f"tl_{row['id']}"
+        is_main = (row.get("is_main_station") or "").strip() == "t"
+        batch.append(
+            {
+                "_id": sid,
+                "id": sid,
+                "name": name,
+                "city": name.split(",")[0].split(" - ")[0],
+                "country": country,
+                "lat": lat,
+                "lon": lon,
+                "uic": row.get("uic") or None,
+                "slug": row.get("slug"),
+                "is_main": is_main,
+                "source": "trainline",
+            }
+        )
+        if limit and len(batch) >= limit:
+            break
+        if len(batch) >= 500:
+            try:
+                await db.eu_stations.insert_many(batch, ordered=False)
+                inserted += len(batch)
+            except Exception as e:
+                logger.info("partial insert: %s", e)
+            batch = []
+    if batch:
+        try:
+            await db.eu_stations.insert_many(batch, ordered=False)
+            inserted += len(batch)
+        except Exception as e:
+            logger.info("final insert: %s", e)
+    # ensure useful indices for fast search
+    await db.eu_stations.create_index([("name", 1)])
+    await db.eu_stations.create_index([("country", 1), ("is_main", -1)])
+    return {"inserted": inserted, "skipped": skipped, "total": await db.eu_stations.count_documents({})}
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 def haversine_km(a: Dict[str, Any], b: Dict[str, Any]) -> float:
@@ -416,9 +502,23 @@ def haversine_km(a: Dict[str, Any], b: Dict[str, Any]) -> float:
 
 
 def _station(sid: str) -> Optional[Dict[str, Any]]:
+    """Return canonical seed station if id matches, else None.
+    Used for TRUNK_ROUTES + journey building (must be sync; only operates on in-memory seed)."""
     for s in SEED_STATIONS:
         if s["id"] == sid:
             return s
+    return None
+
+
+async def resolve_station(sid: str) -> Optional[Dict[str, Any]]:
+    """Async variant: check seed first, then MongoDB eu_stations."""
+    s = _station(sid)
+    if s:
+        return s
+    doc = await db.eu_stations.find_one({"_id": sid})
+    if doc:
+        doc.pop("_id", None)
+        return doc
     return None
 
 
@@ -428,11 +528,16 @@ def asin_safe(x: float) -> float:
     return asin(max(-1.0, min(1.0, x)))
 
 
-def build_synthetic_journey(from_id: str, to_id: str, dep_iso: str, passengers: int) -> Dict[str, Any]:
+def build_synthetic_journey(from_id: str, to_id: str, dep_iso: str, passengers: int, stations_map: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, Any]:
     from math import asin, atan2, cos, degrees, radians, sin, sqrt
 
-    src = _station(from_id)
-    dst = _station(to_id)
+    stations_map = stations_map or {}
+
+    def lookup(sid: str) -> Optional[Dict[str, Any]]:
+        return stations_map.get(sid) or _station(sid)
+
+    src = lookup(from_id)
+    dst = lookup(to_id)
     if not src or not dst:
         raise HTTPException(400, "Unknown station")
 
@@ -463,8 +568,10 @@ def build_synthetic_journey(from_id: str, to_id: str, dep_iso: str, passengers: 
     total_price = 0.0
     operators = ["DB ICE", "SNCF TGV", "ÖBB Railjet", "SBB IC", "Trenitalia FR", "Eurostar", "Renfe AVE", "SJ", "Vy", "NS Intercity"]
     for i in range(len(legs_ids) - 1):
-        a = _station(legs_ids[i])
-        b = _station(legs_ids[i + 1])
+        a = lookup(legs_ids[i])
+        b = lookup(legs_ids[i + 1])
+        if not a or not b:
+            raise HTTPException(400, f"Unknown station {legs_ids[i] if not a else legs_ids[i+1]}")
         km = haversine_km(a, b)
         speed = 140 if km < 400 else 180
         dur_min = max(45, int(km / speed * 60))
@@ -605,33 +712,57 @@ async def stations_search(q: str, limit: int = 8):
     q_low = _norm(q.strip())
     if not q_low:
         return []
-    local = [s for s in SEED_STATIONS if q_low in _norm(s["name"]) or q_low in _norm(s["city"]) or q_low in _norm(s["country"])]
-    local = local[:limit]
-    if len(local) >= limit:
-        return local
-    extra = await transport_get("/locations", {"query": q, "results": limit, "stops": "true", "addresses": "false", "poi": "false"})
-    if isinstance(extra, list):
-        seen = {s["id"] for s in local}
-        for it in extra:
-            if it.get("type") != "stop":
+    # 1) curated seed (instant for hubs)
+    out = [s for s in SEED_STATIONS if q_low in _norm(s["name"]) or q_low in _norm(s["city"]) or q_low in _norm(s["country"])]
+    out = out[:limit]
+    seen = {s["id"] for s in out}
+
+    # 2) eu_stations Mongo collection – starts-with first, then contains, main stations preferred
+    if len(out) < limit:
+        async for doc in db.eu_stations.find({"name": {"$regex": f"^{q}", "$options": "i"}}).sort([("is_main", -1)]).limit(limit - len(out)):
+            doc.pop("_id", None)
+            if doc["id"] in seen:
                 continue
-            loc = it.get("location") or {}
-            if not loc.get("latitude") or it["id"] in seen:
+            out.append(doc)
+            seen.add(doc["id"])
+    if len(out) < limit:
+        async for doc in db.eu_stations.find({"name": {"$regex": q, "$options": "i"}}).sort([("is_main", -1)]).limit(limit - len(out)):
+            doc.pop("_id", None)
+            if doc["id"] in seen:
                 continue
-            local.append(
-                {
-                    "id": it["id"],
-                    "name": it["name"],
-                    "city": (it.get("name") or "").split(",")[0],
-                    "country": "DE",
-                    "lat": loc["latitude"],
-                    "lon": loc["longitude"],
-                }
-            )
-            seen.add(it["id"])
-            if len(local) >= limit:
-                break
-    return local
+            out.append(doc)
+            seen.add(doc["id"])
+
+    # 3) transport.rest live (German DB IDs still useful)
+    if len(out) < limit:
+        extra = await transport_get("/locations", {"query": q, "results": limit, "stops": "true", "addresses": "false", "poi": "false"})
+        if isinstance(extra, list):
+            for it in extra:
+                if it.get("type") != "stop":
+                    continue
+                loc = it.get("location") or {}
+                if not loc.get("latitude") or it["id"] in seen:
+                    continue
+                out.append({"id": it["id"], "name": it["name"], "city": (it.get("name") or "").split(",")[0], "country": "DE", "lat": loc["latitude"], "lon": loc["longitude"]})
+                seen.add(it["id"])
+                if len(out) >= limit:
+                    break
+    return out
+
+
+@api.get("/stations/count")
+async def stations_count():
+    """How many stations are available across seed + eu_stations."""
+    return {"seed": len(SEED_STATIONS), "eu_stations": await db.eu_stations.count_documents({}), "total": len(SEED_STATIONS) + await db.eu_stations.count_documents({})}
+
+
+@api.post("/stations/import")
+async def stations_import_endpoint(user=Depends(current_user)):
+    """Trigger Trainline EU stations bulk import (idempotent)."""
+    if await db.eu_stations.count_documents({}) > 0:
+        return {"status": "already_imported", "count": await db.eu_stations.count_documents({})}
+    res = await import_trainline_stations()
+    return {"status": "imported", **res}
 
 
 @api.get("/stations")
@@ -641,7 +772,7 @@ async def stations_all():
 
 @api.get("/stations/{sid}")
 async def station_detail(sid: str):
-    st = _station(sid)
+    st = await resolve_station(sid)
     if not st:
         raise HTTPException(404, "Station not found")
     return st
@@ -649,7 +780,7 @@ async def station_detail(sid: str):
 
 @api.get("/stations/{sid}/departures")
 async def station_departures(sid: str):
-    st = _station(sid)
+    st = await resolve_station(sid)
     if not st:
         raise HTTPException(404, "Station not found")
     live = await transport_get(f"/stops/{sid}/departures", {"results": 15, "duration": 120})
@@ -694,16 +825,36 @@ async def station_departures(sid: str):
 # Journeys
 # ---------------------------------------------------------------------------
 @api.post("/journeys/search")
-async def journeys_search(q: JourneyQuery):
+async def journeys_search(q: JourneyQuery, request: Request, user=Depends(optional_user)):
     dep_iso = q.departure or datetime.now(timezone.utc).isoformat()
+    # Resolve both stations from either seed or eu_stations
+    stations_map: Dict[str, Dict[str, Any]] = {}
+    for sid in (q.from_id, q.to_id):
+        s = await resolve_station(sid)
+        if s:
+            stations_map[sid] = s
     base = datetime.fromisoformat(dep_iso.replace("Z", "+00:00"))
     options = []
     for offset_h in [0, 1.5, 3, 5]:
         d = base + timedelta(minutes=int(offset_h * 60))
-        opt = build_synthetic_journey(q.from_id, q.to_id, d.isoformat(), q.passengers)
+        opt = build_synthetic_journey(q.from_id, q.to_id, d.isoformat(), q.passengers, stations_map)
         options.append(opt)
     for opt in options:
         await db.journey_cache.update_one({"_id": opt["id"]}, {"$set": opt}, upsert=True)
+    # Conversion-funnel: track search
+    await db.searches.insert_one({
+        "_id": str(uuid.uuid4()),
+        "from_id": q.from_id,
+        "to_id": q.to_id,
+        "from_name": stations_map.get(q.from_id, {}).get("name"),
+        "to_name": stations_map.get(q.to_id, {}).get("name"),
+        "from_country": stations_map.get(q.from_id, {}).get("country"),
+        "to_country": stations_map.get(q.to_id, {}).get("country"),
+        "passengers": q.passengers,
+        "user_id": (user or {}).get("id"),
+        "user_agent": request.headers.get("User-Agent", "")[:200],
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
     return {"results": options, "data_source": options[0]["data_source"]}
 
 
@@ -784,6 +935,18 @@ async def create_or_update_cart(items: List[CartItemIn], user=Depends(optional_u
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.carts.insert_one(doc)
+    # Conversion-funnel: cart_add events (one per item)
+    for it in enriched:
+        await db.cart_events.insert_one({
+            "_id": str(uuid.uuid4()),
+            "cart_id": cart_id,
+            "journey_id": it["journey_id"],
+            "from": it["from"],
+            "to": it["to"],
+            "price": it["price"],
+            "user_id": doc["user_id"],
+            "ts": datetime.now(timezone.utc).isoformat(),
+        })
     doc["id"] = doc.pop("_id")
     return doc
 
@@ -980,6 +1143,164 @@ async def ticket_pdf(ticket_id: str, user=Depends(current_user)):
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={t['pnr']}.pdf"})
 
 
+# ---------------------------------------------------------------------------
+# iCal (.ics) + Apple Wallet (.pkpass) – cross-device exports
+# ---------------------------------------------------------------------------
+def _ics_escape(s: str) -> str:
+    return (s or "").replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
+
+
+def _ics_dt(iso: str) -> str:
+    dt = datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(timezone.utc)
+    return dt.strftime("%Y%m%dT%H%M%SZ")
+
+
+@api.get("/tickets/{ticket_id}/ics")
+async def ticket_ics(ticket_id: str, user=Depends(current_user)):
+    """Universal iCalendar (.ics) – works on iOS/macOS/Google Calendar/Outlook."""
+    t = await db.tickets.find_one({"_id": ticket_id, "user_id": user["id"]})
+    if not t:
+        raise HTTPException(404)
+    j = await db.journey_cache.find_one({"_id": t["journey_id"]})
+    lines = [
+        "BEGIN:VCALENDAR",
+        "PRODID:-//TrainConnect Europe//DE",
+        "VERSION:2.0",
+        "METHOD:PUBLISH",
+        "CALSCALE:GREGORIAN",
+    ]
+    if j:
+        for idx, leg in enumerate(j["legs"]):
+            lines.extend([
+                "BEGIN:VEVENT",
+                f"UID:{t['_id']}-leg{idx}@trainconnect.eu",
+                f"DTSTAMP:{_ics_dt(datetime.now(timezone.utc).isoformat())}",
+                f"DTSTART:{_ics_dt(leg['departure'])}",
+                f"DTEND:{_ics_dt(leg['arrival'])}",
+                f"SUMMARY:🚆 {_ics_escape(leg['operator'])} {leg['train_no']} – {_ics_escape(leg['from']['city'])} → {_ics_escape(leg['to']['city'])}",
+                f"LOCATION:{_ics_escape(leg['from']['name'])}",
+                f"DESCRIPTION:PNR {t['pnr']}\\nVon: {_ics_escape(leg['from']['name'])}\\nNach: {_ics_escape(leg['to']['name'])}\\nGleis: {leg['platform']}\\nTrainConnect Europe (DEMO).",
+                f"GEO:{leg['from']['lat']};{leg['from']['lon']}",
+                "BEGIN:VALARM",
+                "ACTION:DISPLAY",
+                "TRIGGER:-PT30M",
+                f"DESCRIPTION:Abfahrt in 30 Min – Gleis {leg['platform']}",
+                "END:VALARM",
+                "END:VEVENT",
+            ])
+    else:
+        lines.extend([
+            "BEGIN:VEVENT",
+            f"UID:{t['_id']}@trainconnect.eu",
+            f"DTSTAMP:{_ics_dt(datetime.now(timezone.utc).isoformat())}",
+            f"DTSTART:{_ics_dt(t['departure'])}",
+            f"SUMMARY:🚆 {_ics_escape(t['from'])} → {_ics_escape(t['to'])}",
+            f"DESCRIPTION:PNR {t['pnr']}",
+            "END:VEVENT",
+        ])
+    lines.append("END:VCALENDAR")
+    body = "\r\n".join(lines).encode("utf-8")
+    return StreamingResponse(io.BytesIO(body), media_type="text/calendar",
+        headers={"Content-Disposition": f"attachment; filename={t['pnr']}.ics"})
+
+
+def _png_placeholder(label: str, w: int = 200, h: int = 200) -> bytes:
+    """Tiny 1x1 dark-blue PNG so the pkpass schema is well-formed."""
+    # 1x1 transparent PNG (smallest valid)
+    return bytes.fromhex(
+        "89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000D49444154789C63F8FFFF3F0005FE02FEA735FD630000000049454E44AE426082"
+    )
+
+
+@api.get("/tickets/{ticket_id}/pkpass")
+async def ticket_pkpass(ticket_id: str, user=Depends(current_user)):
+    """Build an UNSIGNED Apple Wallet .pkpass bundle.
+
+    To get a Wallet-valid signed pass you need a paid Apple Developer Pass-Type-ID certificate
+    ($99/year). This endpoint emits the full bundle so swapping in your signature later is
+    trivial – meanwhile users can preview the data via 3rd-party Wallet-pass importers.
+    """
+    t = await db.tickets.find_one({"_id": ticket_id, "user_id": user["id"]})
+    if not t:
+        raise HTTPException(404)
+    j = await db.journey_cache.find_one({"_id": t["journey_id"]})
+
+    first_leg = (j["legs"][0] if j else None)
+    last_leg = (j["legs"][-1] if j else None)
+    pass_json: Dict[str, Any] = {
+        "formatVersion": 1,
+        "passTypeIdentifier": "pass.eu.trainconnect.demo",
+        "serialNumber": t["pnr"],
+        "teamIdentifier": "TRAINCONNECTDEMO",
+        "organizationName": "TrainConnect Europe",
+        "description": f"Train ticket {t['pnr']}",
+        "logoText": "TrainConnect",
+        "foregroundColor": "rgb(253, 251, 247)",
+        "backgroundColor": "rgb(5, 9, 20)",
+        "labelColor": "rgb(155, 174, 202)",
+        "boardingPass": {
+            "transitType": "PKTransitTypeTrain",
+            "headerFields": [
+                {"key": "pnr", "label": "PNR", "value": t["pnr"]},
+            ],
+            "primaryFields": [
+                {"key": "from", "label": "VON", "value": (first_leg["from"]["city"] if first_leg else t["from"])},
+                {"key": "to", "label": "NACH", "value": (last_leg["to"]["city"] if last_leg else t["to"])},
+            ],
+            "secondaryFields": [
+                {"key": "dep", "label": "Abfahrt", "value": (first_leg["departure"][11:16] if first_leg else t["departure"][11:16])},
+                {"key": "arr", "label": "Ankunft", "value": (last_leg["arrival"][11:16] if last_leg else "—")},
+                {"key": "platform", "label": "Gleis", "value": (first_leg["platform"] if first_leg else "—")},
+            ],
+            "auxiliaryFields": [
+                {"key": "operator", "label": "Betreiber", "value": (first_leg["operator"] if first_leg else "TrainConnect")},
+                {"key": "train", "label": "Zug", "value": (first_leg["train_no"] if first_leg else "—")},
+                {"key": "passengers", "label": "Pers.", "value": str(t["passengers"])},
+                {"key": "price", "label": "Preis", "value": f"€ {t['price']:.2f}"},
+            ],
+            "backFields": [
+                {"key": "demo", "label": "Hinweis", "value": "DEMO-Reservierung im Stripe-Testmodus. Für gültige Fahrkarte den Original-Anbieter nutzen."},
+            ],
+        },
+        "barcode": {
+            "format": "PKBarcodeFormatQR",
+            "message": f"TC|{t['pnr']}|{t['from']}|{t['to']}|{t['departure']}",
+            "messageEncoding": "iso-8859-1",
+            "altText": t["pnr"],
+        },
+        "relevantDate": t["departure"],
+    }
+
+    pass_bytes = (json.dumps(pass_json, ensure_ascii=False, indent=2)).encode("utf-8")
+    icon_bytes = _png_placeholder("TC")
+
+    # build manifest.json with sha1 of each file
+    manifest = {
+        "pass.json": hashlib.sha1(pass_bytes).hexdigest(),
+        "icon.png": hashlib.sha1(icon_bytes).hexdigest(),
+        "icon@2x.png": hashlib.sha1(icon_bytes).hexdigest(),
+    }
+    manifest_bytes = json.dumps(manifest, indent=2).encode("utf-8")
+
+    # signature is left empty (development mode). Real pkpass requires a CMS signature over manifest.json
+    # signed with an Apple-issued Pass Type ID certificate – see Apple docs.
+    signature_placeholder = b"UNSIGNED_DEMO_PASS_NEEDS_APPLE_DEVELOPER_CERT"
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("pass.json", pass_bytes)
+        zf.writestr("icon.png", icon_bytes)
+        zf.writestr("icon@2x.png", icon_bytes)
+        zf.writestr("manifest.json", manifest_bytes)
+        zf.writestr("signature", signature_placeholder)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.apple.pkpass",
+        headers={"Content-Disposition": f"attachment; filename={t['pnr']}.pkpass"},
+    )
+
+
 @api.post("/errors")
 async def log_error(payload: Dict[str, Any]):
     await db.client_errors.insert_one({**payload, "logged_at": datetime.now(timezone.utc).isoformat()})
@@ -1041,6 +1362,29 @@ async def affiliate_stats(user=Depends(current_user)):
             last_7d += 1
     def top(d):
         return sorted(d.items(), key=lambda x: -x[1])[:10]
+
+    # ---- Conversion funnel ----
+    searches_count = await db.searches.count_documents({})
+    cart_events_count = await db.cart_events.count_documents({})
+    paid_tx_count = await db.payment_transactions.count_documents({"payment_status": "paid"})
+
+    search_routes: Dict[str, int] = {}
+    async for s in db.searches.find().sort("ts", -1).limit(2000):
+        if s.get("from_name") and s.get("to_name"):
+            key = f"{s['from_name']} → {s['to_name']}"
+            search_routes[key] = search_routes.get(key, 0) + 1
+    top_searches = top(search_routes)
+    clicked_routes = set(by_route.keys())
+    missed = [{"route": r, "searches": c} for r, c in top_searches if r not in clicked_routes][:10]
+
+    funnel = {
+        "searches": searches_count,
+        "cart_adds": cart_events_count,
+        "outbound_clicks": total,
+        "paid_checkouts": paid_tx_count,
+        "search_to_click_rate": round((total / searches_count * 100) if searches_count else 0, 1),
+        "click_to_paid_rate": round((paid_tx_count / total * 100) if total else 0, 1),
+    }
     return {
         "total_clicks": total,
         "last_7d": last_7d,
@@ -1051,6 +1395,9 @@ async def affiliate_stats(user=Depends(current_user)):
             {"provider": r["provider"], "leg": r.get("leg"), "country": r.get("country"), "ts": r["ts"]}
             for r in rows[:20]
         ],
+        "funnel": funnel,
+        "top_searches": [{"route": r, "searches": c} for r, c in top_searches],
+        "missed_routes": missed,
     }
 
 
@@ -1074,7 +1421,17 @@ async def _startup():
         await db.stations.insert_many([{**s, "_id": s["id"]} for s in SEED_STATIONS])
     if await db.popular_routes.count_documents({}) == 0:
         await db.popular_routes.insert_many(POPULAR_ROUTES)
-    logger.info("TrainConnect API ready - %d stations seeded", len(SEED_STATIONS))
+    # Trigger Trainline EU stations import in background (only first time)
+    if await db.eu_stations.count_documents({}) < 1000:
+        async def _bg_import():
+            try:
+                logger.info("Starting Trainline EU stations import...")
+                res = await import_trainline_stations()
+                logger.info("Trainline import done: %s", res)
+            except Exception as e:
+                logger.warning("Trainline import failed: %s", e)
+        asyncio.create_task(_bg_import())
+    logger.info("TrainConnect API ready - %d seed stations", len(SEED_STATIONS))
 
 
 app.include_router(api)

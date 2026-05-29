@@ -57,6 +57,8 @@ export const ticketsApi = {
   list: () => http.get("/tickets").then((r) => r.data),
   detail: (id) => http.get(`/tickets/${id}`).then((r) => r.data),
   pdfUrl: (id) => `${API}/tickets/${id}/pdf`,
+  icsUrl: (id) => `${API}/tickets/${id}/ics`,
+  pkpassUrl: (id) => `${API}/tickets/${id}/pkpass`,
 };
 
 // ---- Affiliate ----
