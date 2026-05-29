@@ -1,0 +1,92 @@
+{
+  "project_name": "TrainConnect Europe",
+  "slogan": "Ein Ticket. Ganz Europa.",
+  "theme": {
+    "mode": "dark",
+    "archetype": "Archetype 5 (Luxury) + Archetype 4 (Swiss/High-Contrast)",
+    "description": "High-end cinematic travel booking with raw data utility. Feels like a premium command center for European rail travel. 'Geo-map-first' UI where the dark-styled track map often serves as the canvas. A mix of midnight navy tones, strict technical grids, and vintage ticket typographic motifs."
+  },
+  "colors": {
+    "primary": "#1a2d5e",
+    "primary_foreground": "#FFFFFF",
+    "background": "#050914",
+    "surface": "#0c152b",
+    "surface_glass": "rgba(12, 21, 43, 0.7)",
+    "accent_alert": "#E63946",
+    "accent_vintage": "#FDFBF7",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#9BAECA",
+    "border": "#1a2d5e",
+    "grid_line": "rgba(255,255,255,0.05)"
+  },
+  "typography": {
+    "fonts": {
+      "headings": "Cabinet Grotesk",
+      "body": "IBM Plex Sans",
+      "data_and_mono": "IBM Plex Mono"
+    },
+    "rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter uppercase",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "body": "text-base leading-relaxed font-light",
+      "data": "text-sm tracking-widest font-mono uppercase text-accent_vintage",
+      "labels": "text-xs font-mono tracking-[0.2em] uppercase text-text_secondary"
+    }
+  },
+  "layout_and_spacing": {
+    "general": "Generous Spacing (p-8 to p-12). Asymmetric alignments for landing page.",
+    "dashboard_grid": "MODE B: 'Control Room' for search results. Tight gaps, high density. grid-cols-1 md:grid-cols-4",
+    "marketing_grid": "MODE A: 'Tetris' Grid for landing hero. Hero Search Widget spans 8 cols, Image spans 4 cols.",
+    "map_integration": "Map sits fixed in background (h-screen, w-screen) under a pointer-events-none overlay. UI floats on top via pointer-events-auto."
+  },
+  "surfaces_and_micro_themes": {
+    "header_nav": "Glassmorphism (Crystal/Apple variant). backdrop-blur-xl bg-[#0c152b]/60 border-b border-white/10.",
+    "search_widget": "Solid background (#0c152b) with 'Tracing Beam' glowing border effect to make it pop against the map.",
+    "ticket_cards": "Grid Borders (Technical Look). Expose the skeleton. border-collapse layouts with border-b border-r border-[#1a2d5e]. No soft shadows. Sharp corners.",
+    "delay_badges": "Solid #E63946 background with sharp corners and IBM Plex Mono text."
+  },
+  "components_strategy": {
+    "search_inputs": "Shadcn based. Heavily customized: flat, no radius (rounded-none), border-b only or sharp rectangles. Floating labels.",
+    "date_picker": "Shadcn Calendar. Dark theme overrides, active dates highlighted in #E63946 or #FDFBF7.",
+    "map": "Leaflet with react-leaflet. Use CartoDB Dark Matter tile layer or similar dark theme to match #0A0F1C background. OpenRailwayMap overlay for tracks.",
+    "cart_drawer": "Shadcn Sheet component. Slid out from right. Minimalist, monochrome layout."
+  },
+  "motion_and_interactions": {
+    "hover_states": "Text links and buttons get a sharp, immediate color fill. No slow muddy transitions.",
+    "map_markers": "Trains moving on the map should have a CSS radar pulse animation (ping) in #E63946.",
+    "page_load": "Framer Motion staggered fade-ups for timetable list items (y: 20, opacity: 0)."
+  },
+  "assets": {
+    "hero_background": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/fb96d4ae-a35e-4a10-b099-625bc93fdb67/images/76b56b578b309505fcfa292b0a4fb71b34dbdc471e9cbac21b26dc2f497d781c.png",
+      "description": "Cinematic wide-angle view of a sleek high-speed train crossing an elegant minimalist bridge at twilight. Use for Landing Hero background or fallback."
+    },
+    "map_abstract_bg": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/fb96d4ae-a35e-4a10-b099-625bc93fdb67/images/c00bb85dbd70ac2b2ca8fdb53981ccbb80f75c4e7b0be3648bbd245c9d80bc24.png",
+      "description": "Abstract minimalist geometric background featuring intersecting railway tracks and map contour lines. Use as fallback texture behind UI where map is not active."
+    },
+    "ticket_texture": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/fb96d4ae-a35e-4a10-b099-625bc93fdb67/images/b72ea54bfc4a414e8b02bce81b12adaafd20022eeff4d62ba5ec4b83025ba272.png",
+      "description": "Close-up macro shot of a vintage European train ticket. Use for decorative elements on the booking confirmation screen or empty states."
+    },
+    "train_station_1": {
+      "url": "https://images.pexels.com/photos/5779300/pexels-photo-5779300.jpeg",
+      "description": "A Deutsche Bahn ICE train at a bustling Frankfurt train station at night. Use in 'About' or 'Stations' section header."
+    },
+    "train_station_2": {
+      "url": "https://images.pexels.com/photos/37376075/pexels-photo-37376075.jpeg",
+      "description": "Impressive view of Antwerp's historic Central Station. Use for station detail headers or marketing blocks."
+    }
+  },
+  "specific_page_instructions": {
+    "landing": "Map-first design. The hero background is a dark-styled Leaflet map OR the provided abstract railway map, heavily darkened. The search widget floats boldly in the center. Slogan 'Ein Ticket. Ganz Europa.' is in massive Cabinet Grotesk font.",
+    "search_results": "Asymmetric bento layout. Left column: Train results resembling stacked horizontal vintage tickets with dark theme styling. Right column: Live map showing the selected route.",
+    "connection_detail": "Control Room aesthetic. Detailed timeline of stations on the left with delay badges. The map dominates the right 2/3rds showing the real-time train icon on OpenRailwayMap tracks.",
+    "cart_checkout": "Swiss Brutalist logic. Ultra clean, high contrast. Cart items clearly broken down by leg. Stripe demo badge visible prominently. 'Sofortkauf' CTA button in #E63946."
+  },
+  "technical_rules": {
+    "testing": "All interactive elements MUST have data-testid attributes (e.g., data-testid='search-trains-btn').",
+    "icons": "Use @phosphor-icons/react for high-end duotone or thin weights to match the vintage railway vibe."
+  }
+}
