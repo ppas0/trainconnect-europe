@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut } from "@phosphor-icons/react";
-import { trainApi, cartApi, ticketsApi, fmtTime, fmtDate, fmtDur, fmtPrice } from "./api";
+import { trainApi, cartApi, ticketsApi, affiliateApi, fmtTime, fmtDate, fmtDur, fmtPrice } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT } from "./i18n";
 import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill } from "./components";
@@ -194,15 +194,7 @@ export function JourneyDetail() {
               <div className="text-xs text-[#9baeca] mt-2 font-body">{t("jd.providers_note")}</div>
               <div className="mt-3 grid gap-2">
                 {j.provider_links.map((p, i) => (
-                  <a key={i} href={p.url} target="_blank" rel="noopener noreferrer"
-                     data-testid={`provider-link-${i}`}
-                     className="flex items-center justify-between gap-3 border border-[#1a2d5e] hover:border-[#E63946] px-3 py-2 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-mono text-sm uppercase tracking-wider">{p.name}</div>
-                      <div className="eyebrow truncate">{p.leg}</div>
-                    </div>
-                    <ArrowSquareOut size={16} color="#9baeca" />
-                  </a>
+                  <ProviderLink key={i} p={p} idx={i} journeyId={j.id} />
                 ))}
               </div>
             </div>
@@ -435,6 +427,147 @@ export function Tickets() {
             </a>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ============== ProviderLink (tracked affiliate click) ==============
+function ProviderLink({ p, idx, journeyId }) {
+  const [loading, setLoading] = useState(false);
+  const onClick = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const r = await affiliateApi.trackClick({
+        provider: p.name,
+        country: p.country,
+        journey_id: journeyId,
+        leg: p.leg,
+        url: p.url,
+      });
+      window.open(r.redirect_url, "_blank", "noopener,noreferrer");
+    } catch {
+      window.open(p.url, "_blank", "noopener,noreferrer");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <a
+      href={p.url}
+      onClick={onClick}
+      data-testid={`provider-link-${idx}`}
+      className="flex items-center justify-between gap-3 border border-[#1a2d5e] hover:border-[#E63946] px-3 py-2 transition-colors cursor-pointer"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="font-mono text-sm uppercase tracking-wider">{p.name}</div>
+        <div className="eyebrow truncate">{p.leg}</div>
+      </div>
+      <ArrowSquareOut size={16} color={loading ? "#E63946" : "#9baeca"} />
+    </a>
+  );
+}
+
+// ============== Affiliate Dashboard ==============
+export function AffiliateDashboard() {
+  const { user } = useAuth();
+  const { t } = useT();
+  const { data, isLoading } = useQuery({
+    queryKey: ["affiliate-stats"],
+    queryFn: affiliateApi.stats,
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  if (!user)
+    return (
+      <div className="max-w-xl mx-auto px-6 py-20 text-center">
+        <Lock size={48} className="mx-auto text-[#9baeca]" />
+        <h1 className="font-display text-3xl uppercase mt-4">{t("tk.login_required")}</h1>
+        <Link to="/login" className="btn btn-primary mt-6">{t("nav.login")}</Link>
+      </div>
+    );
+
+  if (isLoading || !data)
+    return <div className="max-w-7xl mx-auto px-6 py-20 text-center text-[#9baeca]">Loading...</div>;
+
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="eyebrow">Analytics</div>
+      <h1 className="font-display text-4xl uppercase">Affiliate Dashboard</h1>
+      <div className="mt-1 text-sm text-[#9baeca] font-body">
+        Klicks auf Partner-Anbieter (DB, SNCF, ÖBB, …) – das sind deine Verhandlungsdaten für echte Affiliate-Deals.
+      </div>
+
+      <div className="mt-8 grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="surface p-5" data-testid="stat-total">
+          <div className="eyebrow">Gesamt-Klicks</div>
+          <div className="font-display text-4xl mt-2">{data.total_clicks}</div>
+        </div>
+        <div className="surface p-5" data-testid="stat-7d">
+          <div className="eyebrow">Letzte 7 Tage</div>
+          <div className="font-display text-4xl mt-2">{data.last_7d}</div>
+        </div>
+        <div className="surface p-5" data-testid="stat-providers">
+          <div className="eyebrow">Aktive Anbieter</div>
+          <div className="font-display text-4xl mt-2">{data.by_provider.length}</div>
+        </div>
+        <div className="surface p-5" data-testid="stat-countries">
+          <div className="eyebrow">Länder</div>
+          <div className="font-display text-4xl mt-2">{data.by_country.length}</div>
+        </div>
+      </div>
+
+      <div className="mt-10 grid md:grid-cols-3 gap-6">
+        <div className="surface p-5">
+          <h3 className="font-display text-xl uppercase">Top Anbieter</h3>
+          <div className="mt-4 space-y-2">
+            {data.by_provider.length === 0 && <div className="text-sm text-[#9baeca]">Noch keine Klicks.</div>}
+            {data.by_provider.map((p, i) => (
+              <div key={i} className="flex justify-between items-center border-b border-[#1a2d5e] py-2">
+                <span className="text-sm">{p.name}</span>
+                <span className="font-mono text-[#FDFBF7]">{p.clicks}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="surface p-5">
+          <h3 className="font-display text-xl uppercase">Top Länder</h3>
+          <div className="mt-4 space-y-2">
+            {data.by_country.map((c, i) => (
+              <div key={i} className="flex justify-between items-center border-b border-[#1a2d5e] py-2">
+                <span className="text-sm">{c.country}</span>
+                <span className="font-mono text-[#FDFBF7]">{c.clicks}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="surface p-5">
+          <h3 className="font-display text-xl uppercase">Top Strecken</h3>
+          <div className="mt-4 space-y-2">
+            {data.top_routes.map((r, i) => (
+              <div key={i} className="flex justify-between items-center border-b border-[#1a2d5e] py-2 gap-2">
+                <span className="text-xs truncate">{r.route}</span>
+                <span className="font-mono text-[#FDFBF7]">{r.clicks}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-10 surface p-5">
+        <h3 className="font-display text-xl uppercase">Letzte Klicks</h3>
+        <div className="mt-4 grid gap-1">
+          {data.recent.map((r, i) => (
+            <div key={i} className="flex items-center gap-4 py-1 border-b border-[#1a2d5e] text-xs">
+              <span className="font-mono w-40 text-[#9baeca]">{new Date(r.ts).toLocaleString("de-DE")}</span>
+              <span className="w-32 truncate">{r.provider}</span>
+              <span className="w-12 font-mono text-[#9baeca]">{r.country || "—"}</span>
+              <span className="flex-1 truncate text-[#9baeca]">{r.leg || "—"}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

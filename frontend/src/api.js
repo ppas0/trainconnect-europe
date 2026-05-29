@@ -59,6 +59,12 @@ export const ticketsApi = {
   pdfUrl: (id) => `${API}/tickets/${id}/pdf`,
 };
 
+// ---- Affiliate ----
+export const affiliateApi = {
+  trackClick: (data) => http.post("/affiliate/click", data).then((r) => r.data),
+  stats: () => http.get("/affiliate/stats").then((r) => r.data),
+};
+
 // ---- helpers ----
 export const fmtTime = (iso) => {
   try {

@@ -986,6 +986,74 @@ async def log_error(payload: Dict[str, Any]):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Affiliate click tracking
+# ---------------------------------------------------------------------------
+class AffiliateClickIn(BaseModel):
+    provider: str
+    country: Optional[str] = None
+    journey_id: Optional[str] = None
+    leg: Optional[str] = None
+    url: str
+
+
+@api.post("/affiliate/click")
+async def affiliate_click(body: AffiliateClickIn, request: Request, user=Depends(optional_user)):
+    """Log an affiliate click then return the (potentially decorated) outbound URL."""
+    # Append a UTM source param so partners can identify TrainConnect traffic
+    target = body.url
+    sep = "&" if ("?" in target) else "?"
+    decorated = f"{target}{sep}utm_source=trainconnect&utm_medium=referral&utm_campaign=multi_leg"
+    record = {
+        "_id": str(uuid.uuid4()),
+        "provider": body.provider,
+        "country": body.country,
+        "journey_id": body.journey_id,
+        "leg": body.leg,
+        "url": target,
+        "decorated_url": decorated,
+        "user_id": (user or {}).get("id"),
+        "user_agent": request.headers.get("User-Agent", "")[:200],
+        "referer": request.headers.get("Referer", "")[:200],
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.affiliate_clicks.insert_one(record)
+    return {"redirect_url": decorated, "click_id": record["_id"]}
+
+
+@api.get("/affiliate/stats")
+async def affiliate_stats(user=Depends(current_user)):
+    """Per-provider + per-country aggregates. Available to any logged-in user."""
+    rows = await db.affiliate_clicks.find().sort("ts", -1).to_list(2000)
+    total = len(rows)
+    by_provider: Dict[str, int] = {}
+    by_country: Dict[str, int] = {}
+    by_route: Dict[str, int] = {}
+    last_7d = 0
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    for r in rows:
+        by_provider[r["provider"]] = by_provider.get(r["provider"], 0) + 1
+        if r.get("country"):
+            by_country[r["country"]] = by_country.get(r["country"], 0) + 1
+        if r.get("leg"):
+            by_route[r["leg"]] = by_route.get(r["leg"], 0) + 1
+        if r["ts"] > cutoff:
+            last_7d += 1
+    def top(d):
+        return sorted(d.items(), key=lambda x: -x[1])[:10]
+    return {
+        "total_clicks": total,
+        "last_7d": last_7d,
+        "by_provider": [{"name": k, "clicks": v} for k, v in top(by_provider)],
+        "by_country": [{"country": k, "clicks": v} for k, v in top(by_country)],
+        "top_routes": [{"route": k, "clicks": v} for k, v in top(by_route)],
+        "recent": [
+            {"provider": r["provider"], "leg": r.get("leg"), "country": r.get("country"), "ts": r["ts"]}
+            for r in rows[:20]
+        ],
+    }
+
+
 @api.get("/admin/stats")
 async def admin_stats(user=Depends(current_user)):
     if user.get("role") != "admin":

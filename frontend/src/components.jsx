@@ -61,6 +61,7 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-mono uppercase tracking-widest text-[#9baeca]">
           <Link to="/stations" data-testid="nav-stations" className="hover:text-white">{t("nav.stations")}</Link>
           <Link to="/tickets" data-testid="nav-tickets" className="hover:text-white">{t("nav.tickets")}</Link>
+          {user && <Link to="/affiliate" data-testid="nav-affiliate" className="hover:text-white">Analytics</Link>}
         </nav>
         <div className="flex items-center gap-2">
           <LangSwitcher />

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, CartProvider } from "./store";
 import { LangProvider } from "./i18n";
 import { Header, Footer } from "./components";
-import { Home, Search, JourneyDetail, Stations, Cart, CheckoutSuccess, Tickets, AuthPage } from "./pages";
+import { Home, Search, JourneyDetail, Stations, Cart, CheckoutSuccess, Tickets, AuthPage, AffiliateDashboard } from "./pages";
 
 export default function App() {
   return (
@@ -21,6 +21,7 @@ export default function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout/success" element={<CheckoutSuccess />} />
                   <Route path="/tickets" element={<Tickets />} />
+                  <Route path="/affiliate" element={<AffiliateDashboard />} />
                   <Route path="/login" element={<AuthPage mode="login" />} />
                   <Route path="/register" element={<AuthPage mode="register" />} />
                   <Route path="*" element={<Home />} />
