@@ -42,7 +42,7 @@ export function Home() {
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {(popular || []).map((p, i) => (
-            <Link key={i} to={`/?from_id=${p.from_id}&to_id=${p.to_id}`}
+            <Link key={i} to={`/search?from_id=${p.from_id}&to_id=${p.to_id}&passengers=1`}
                   className="surface p-5 hover:border-[#E63946] block" data-testid={`popular-${p.from_id}-${p.to_id}`}>
               <div className="eyebrow flex items-center gap-2"><Train size={12} weight="duotone" /> {p.from.country} → {p.to.country}</div>
               <div className="font-display text-2xl uppercase mt-3 leading-tight">{p.from.city}<br/>→ {p.to.city}</div>
@@ -79,10 +79,9 @@ export function Search() {
   const { add } = useCart();
   const from_id = params.get("from_id");
   const to_id = params.get("to_id");
-  const from_name = params.get("from_name");
-  const to_name = params.get("to_name");
-  const departure = params.get("departure");
   const passengers = parseInt(params.get("passengers") || "1");
+  // Stable departure key (URL value, or "now" rounded to current minute on first mount)
+  const departure = useMemo(() => params.get("departure") || new Date(Math.floor(Date.now() / 60000) * 60000).toISOString(), [params]);
   const [selectedJ, setSelectedJ] = useState(null);
 
   const { data, isLoading, error } = useQuery({
@@ -90,6 +89,10 @@ export function Search() {
     queryFn: () => trainApi.searchJourneys({ from_id, to_id, departure, passengers }),
     enabled: !!from_id && !!to_id,
   });
+
+  // Derive station names from results (always available) or URL fallback
+  const from_name = data?.results?.[0]?.from?.name || params.get("from_name") || from_id;
+  const to_name = data?.results?.[0]?.to?.name || params.get("to_name") || to_id;
 
   useEffect(() => {
     if (data?.results?.length && !selectedJ) setSelectedJ(data.results[0]);
