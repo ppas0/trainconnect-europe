@@ -22,6 +22,14 @@ Constraints: alles **kostenlos**, **echte Daten** wo möglich, **Test-Zahlung** 
 
 ## What's Been Implemented (Jan 2026)
 
+### Phase 3 (29.01.2026) – Affiliate Tracking
+- ✅ **POST /api/affiliate/click** – loggt jeden Klick in MongoDB-Collection `affiliate_clicks` (provider, country, journey_id, leg, user_agent, referer, ts, optional user_id). Hängt automatisch `utm_source=trainconnect&utm_medium=referral&utm_campaign=multi_leg` an die Ziel-URL.
+- ✅ **GET /api/affiliate/stats** – aggregiert Total-Klicks, Last-7d, top_providers, by_country, top_routes, recent[20] (auth required).
+- ✅ **ProviderLink** Component – ersetzt direkten Anchor: postet erst /affiliate/click, dann `window.open(decorated_url)`. Robuster Fallback bei Network-Fail.
+- ✅ **AffiliateDashboard** Page (`/affiliate`) – KPI-Cards (Total, 7d, Anbieter, Länder) + 3 Tabellen (Top Anbieter, Top Länder, Top Strecken) + Letzte Klicks Liste, refetched alle 30s.
+- ✅ **Header-Link "Analytics"** sichtbar, sobald User eingeloggt ist.
+- ✅ Testing: **34/34 Backend pytest** + **100% Frontend** (Iteration 3) – keine Bugs gefunden.
+
 ### Phase 2 (29.01.2026) – Erweiterungen
 - ✅ **+60 Bahnhöfe** seeded → jetzt **114 Stationen in 34 Ländern** (inkl. TR, BA, MK, AL, ME, EE, LV, LT, SK, BG, RO, HR + DE/FR/IT/ES/UK regional tiefer)
 - ✅ **+4 trunk routes** für Cross-Border-Multi-Leg (Türkei→Balkan, Iberia tiefer, Baltikum, Mediterran West)
