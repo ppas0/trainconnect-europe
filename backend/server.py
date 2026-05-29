@@ -1138,7 +1138,9 @@ async def ticket_pdf(ticket_id: str, user=Depends(current_user)):
     pdf.set_font("Helvetica", "I", 9)
     pdf.set_text_color(120, 120, 120)
     pdf.multi_cell(0, 5, "Hinweis: Dies ist eine DEMO-Reservierung im Stripe-Testmodus. Fuer eine gueltige Fahrkarte besuche bitte den Original-Anbieter (DB, SNCF, OeBB, SBB ...).")
-    buf = io.BytesIO(pdf.output(dest="S") if isinstance(pdf.output(dest="S"), bytes) else pdf.output(dest="S").encode("latin-1"))
+    out = pdf.output(dest="S")
+    raw = bytes(out) if isinstance(out, (bytes, bytearray)) else out.encode("latin-1")
+    buf = io.BytesIO(raw)
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={t['pnr']}.pdf"})
 

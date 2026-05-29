@@ -514,58 +514,56 @@ export function AffiliateDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
-      <div className="eyebrow">Analytics</div>
-      <h1 className="font-display text-4xl uppercase">Affiliate Dashboard</h1>
-      <div className="mt-1 text-sm text-[#9baeca] font-body">
-        Klicks auf Partner-Anbieter (DB, SNCF, ÖBB, …) – das sind deine Verhandlungsdaten für echte Affiliate-Deals.
-      </div>
+      <div className="eyebrow">{t("aff.eyebrow")}</div>
+      <h1 className="font-display text-4xl uppercase">{t("aff.title")}</h1>
+      <div className="mt-1 text-sm text-[#9baeca] font-body">{t("aff.lead")}</div>
 
       <div className="mt-8 grid sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="surface p-5" data-testid="stat-total">
-          <div className="eyebrow">Gesamt-Klicks</div>
+          <div className="eyebrow">{t("aff.total")}</div>
           <div className="font-display text-4xl mt-2">{data.total_clicks}</div>
         </div>
         <div className="surface p-5" data-testid="stat-7d">
-          <div className="eyebrow">Letzte 7 Tage</div>
+          <div className="eyebrow">{t("aff.last7d")}</div>
           <div className="font-display text-4xl mt-2">{data.last_7d}</div>
         </div>
         <div className="surface p-5" data-testid="stat-providers">
-          <div className="eyebrow">Aktive Anbieter</div>
+          <div className="eyebrow">{t("aff.providers")}</div>
           <div className="font-display text-4xl mt-2">{data.by_provider.length}</div>
         </div>
         <div className="surface p-5" data-testid="stat-countries">
-          <div className="eyebrow">Länder</div>
+          <div className="eyebrow">{t("aff.countries")}</div>
           <div className="font-display text-4xl mt-2">{data.by_country.length}</div>
         </div>
       </div>
 
       {data.funnel && (
         <div className="mt-10 surface p-6" data-testid="funnel">
-          <h2 className="font-display text-2xl uppercase flex items-center gap-2"><Funnel size={22} weight="duotone" /> Conversion-Funnel</h2>
+          <h2 className="font-display text-2xl uppercase flex items-center gap-2"><Funnel size={22} weight="duotone" /> {t("aff.funnel")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-            <FunnelStep label="Suchen" value={data.funnel.searches} />
-            <FunnelStep label="Warenkorb-Adds" value={data.funnel.cart_adds} />
-            <FunnelStep label="Anbieter-Klicks" value={data.funnel.outbound_clicks} />
-            <FunnelStep label="Bezahlte Checkouts" value={data.funnel.paid_checkouts} />
+            <FunnelStep label={t("aff.searches")} value={data.funnel.searches} />
+            <FunnelStep label={t("aff.cart_adds")} value={data.funnel.cart_adds} />
+            <FunnelStep label={t("aff.outbound")} value={data.funnel.outbound_clicks} />
+            <FunnelStep label={t("aff.paid")} value={data.funnel.paid_checkouts} />
           </div>
           <div className="mt-5 flex flex-wrap gap-6 text-sm">
             <div>
-              <div className="eyebrow">Search → Click Rate</div>
-              <div className="font-mono text-2xl text-[#E63946]">{data.funnel.search_to_click_rate}%</div>
+              <div className="eyebrow">{t("aff.s2c_rate")}</div>
+              <div className="font-mono text-2xl text-[#E63946]">{Math.min(100, data.funnel.search_to_click_rate)}%</div>
             </div>
             <div>
-              <div className="eyebrow">Click → Paid Rate</div>
+              <div className="eyebrow">{t("aff.c2p_rate")}</div>
               <div className="font-mono text-2xl text-[#E63946]">{data.funnel.click_to_paid_rate}%</div>
             </div>
           </div>
           {data.missed_routes?.length > 0 && (
             <div className="mt-6">
-              <div className="eyebrow text-[#E63946]">⚠ Verpasste Chancen (oft gesucht, nie geklickt)</div>
+              <div className="eyebrow text-[#E63946]">⚠ {t("aff.missed")}</div>
               <div className="mt-2 grid gap-1">
                 {data.missed_routes.map((m, i) => (
                   <div key={i} className="flex justify-between text-sm border-b border-[#1a2d5e] py-1">
                     <span className="truncate">{m.route}</span>
-                    <span className="font-mono text-[#9baeca]">{m.searches}x gesucht</span>
+                    <span className="font-mono text-[#9baeca]">{m.searches}{t("aff.missed_unit")}</span>
                   </div>
                 ))}
               </div>
@@ -576,9 +574,9 @@ export function AffiliateDashboard() {
 
       <div className="mt-10 grid md:grid-cols-3 gap-6">
         <div className="surface p-5">
-          <h3 className="font-display text-xl uppercase">Top Anbieter</h3>
+          <h3 className="font-display text-xl uppercase">{t("aff.top_providers")}</h3>
           <div className="mt-4 space-y-2">
-            {data.by_provider.length === 0 && <div className="text-sm text-[#9baeca]">Noch keine Klicks.</div>}
+            {data.by_provider.length === 0 && <div className="text-sm text-[#9baeca]">{t("aff.no_clicks")}</div>}
             {data.by_provider.map((p, i) => (
               <div key={i} className="flex justify-between items-center border-b border-[#1a2d5e] py-2">
                 <span className="text-sm">{p.name}</span>
@@ -588,7 +586,7 @@ export function AffiliateDashboard() {
           </div>
         </div>
         <div className="surface p-5">
-          <h3 className="font-display text-xl uppercase">Top Länder</h3>
+          <h3 className="font-display text-xl uppercase">{t("aff.top_countries")}</h3>
           <div className="mt-4 space-y-2">
             {data.by_country.map((c, i) => (
               <div key={i} className="flex justify-between items-center border-b border-[#1a2d5e] py-2">
@@ -599,7 +597,7 @@ export function AffiliateDashboard() {
           </div>
         </div>
         <div className="surface p-5">
-          <h3 className="font-display text-xl uppercase">Top Strecken</h3>
+          <h3 className="font-display text-xl uppercase">{t("aff.top_routes")}</h3>
           <div className="mt-4 space-y-2">
             {data.top_routes.map((r, i) => (
               <div key={i} className="flex justify-between items-center border-b border-[#1a2d5e] py-2 gap-2">
@@ -612,11 +610,11 @@ export function AffiliateDashboard() {
       </div>
 
       <div className="mt-10 surface p-5">
-        <h3 className="font-display text-xl uppercase">Letzte Klicks</h3>
+        <h3 className="font-display text-xl uppercase">{t("aff.recent")}</h3>
         <div className="mt-4 grid gap-1">
           {data.recent.map((r, i) => (
             <div key={i} className="flex items-center gap-4 py-1 border-b border-[#1a2d5e] text-xs">
-              <span className="font-mono w-40 text-[#9baeca]">{new Date(r.ts).toLocaleString("de-DE")}</span>
+              <span className="font-mono w-40 text-[#9baeca]">{new Date(r.ts).toLocaleString()}</span>
               <span className="w-32 truncate">{r.provider}</span>
               <span className="w-12 font-mono text-[#9baeca]">{r.country || "—"}</span>
               <span className="flex-1 truncate text-[#9baeca]">{r.leg || "—"}</span>
