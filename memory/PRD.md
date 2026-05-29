@@ -22,7 +22,19 @@ Constraints: alles **kostenlos**, **echte Daten** wo möglich, **Test-Zahlung** 
 
 ## What's Been Implemented (Jan 2026)
 
-### Phase 3 (29.01.2026) – Affiliate Tracking
+### Phase 4 (29.01.2026) – Massive Stations DB + Wallet + Funnel
+- ✅ **51.290 europäische Bahnhöfe** importiert (Trainline-EU CSV, ~10 MB). Persistiert in MongoDB-Collection `eu_stations`. Auch kleinste Halte sind durchsuchbar (Hattenheim, Carcassonne, Burglengenfeld …). Bulk-Import läuft beim Erststart als asyncio.create_task.
+- ✅ **/api/stations/search** durchsucht jetzt seed + eu_stations + transport.rest hintereinander (seed bevorzugt für Hubs).
+- ✅ **build_synthetic_journey** akzeptiert station_resolver-Map, so funktionieren auch trainline-IDs (`tl_…`) als from_id/to_id.
+- ✅ **iCal-Export** `/api/tickets/{id}/ics` – Multi-Leg VEVENT mit 30-Min VALARM. Funktioniert auf iOS/macOS/Google/Outlook.
+- ✅ **Apple Wallet** `/api/tickets/{id}/pkpass` – vollständiges .pkpass-ZIP-Bundle (pass.json, icon, manifest, signature-Placeholder). UNSIGNED – für Wallet-validierte Pässe braucht der Betreiber ein Apple-Pass-Type-ID-Cert ($99/Jahr).
+- ✅ **JWT-Auth via ?token=** Query-Param zusätzlich zu Authorization-Header – Browser-Direkt-Downloads (PDF/ICS/PKPASS) funktionieren ohne JS.
+- ✅ **Conversion-Funnel-Tracking** – Suchen → Warenkorb-Adds → Outbound-Klicks → Bezahlte Checkouts. Plus „Missed Opportunities" Liste (Strecken, die oft gesucht aber nie geklickt werden) als UX-Goldader.
+- ✅ **Affiliate-Dashboard** komplett übersetzt DE/EN/FR/IT/ES (~25 neue i18n-Keys).
+- ✅ **PDF-Bug-Fix** für fpdf2 ≥ 2.7 bytearray-Return.
+- ✅ Testing: **47/47 Backend + 100% Frontend** ✅ (Iteration 5 nach Bug-Fix-Re-Test).
+
+### Phase 3 – Affiliate Tracking
 - ✅ **POST /api/affiliate/click** – loggt jeden Klick in MongoDB-Collection `affiliate_clicks` (provider, country, journey_id, leg, user_agent, referer, ts, optional user_id). Hängt automatisch `utm_source=trainconnect&utm_medium=referral&utm_campaign=multi_leg` an die Ziel-URL.
 - ✅ **GET /api/affiliate/stats** – aggregiert Total-Klicks, Last-7d, top_providers, by_country, top_routes, recent[20] (auth required).
 - ✅ **ProviderLink** Component – ersetzt direkten Anchor: postet erst /affiliate/click, dann `window.open(decorated_url)`. Robuster Fallback bei Network-Fail.
