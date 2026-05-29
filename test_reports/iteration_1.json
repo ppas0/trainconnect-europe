@@ -1,0 +1,47 @@
+{
+  "summary": "Comprehensive backend + frontend testing of TrainConnect Europe PWA. All 19 backend pytest cases passed (100%). All critical frontend flows working: home hero, popular routes, register/login, Stavanger->Athina multi-leg search (8 legs across NO/SE/DK/DE/AT/IT/GR), journey detail with live route map, add-to-cart, real Stripe test checkout session creation (redirects to checkout.stripe.com), stations list+map+departures panel, PWA manifest + sw.js reachable.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Search page header (/search)", "issue": "From/To station names not rendered in the heading - shows only two arrow glyphs and a fallback date 'DO., 01. JAN.'. URL only has from_id/to_id so page header has no station labels to display. Journey cards themselves render correctly.", "selector": "/search page top heading", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Global", "issues": ["index.html has <link rel=preload> with unsupported 'as' value - emits 2 console warnings (non-blocking)"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_trainconnect.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional/low priority) On /search page, fetch station names from /api/stations/{id} or include from_name/to_name in URL so the page heading shows 'Stavanger -> Athina' instead of blank arrows + wrong date label",
+    "(Optional) Fix index.html <link rel=preload> 'as' attribute to remove console warnings"
+  ],
+  "critical_code_review_comments": [
+    "server.py is ~870 lines and contains models + routes + auth + payments + PDF gen + seed data in a single file. Consider splitting into modules (routers/auth.py, routers/journeys.py, services/stripe.py, data/seed.py) for maintainability if the codebase grows.",
+    "MongoDB _id is correctly excluded in all responses (uses pop('_id') / replaced with 'id') - good.",
+    "Stripe API key is read from env, JWT secret from env - good.",
+    "transport.rest fallback to curated synthetic data is well-implemented with try/except wrappers.",
+    "All interactive elements have data-testid attributes (excellent for testability).",
+    "auth/me endpoint correctly strips password from response.",
+    "popular-routes endpoint enriches from_id/to_id with full station objects (good DX).",
+    "journey_live computes status (scheduled/in_transit/arrived) + progress correctly via timestamps.",
+    "Login flow uses Bearer token via Authorization header - standard.",
+    "Note: /api/checkout/session and /api/cart accept optional_user - guest checkout supported.",
+    "Backend uses async motor + httpx properly - no blocking IO detected."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_trainconnect.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "demo@trainconnect.eu / demo123 (created via /api/auth/register during test run)",
+  "seed_data_creation": "Auto-seeded on backend startup: 54 stations + 8 popular routes. No manual seeding needed. Test also creates ad-hoc users with email pattern test_<uuid>@trainconnect.eu and qa_<timestamp>@trainconnect.eu.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend tests are in /app/backend/tests/test_trainconnect.py - run with `python -m pytest backend/tests/test_trainconnect.py -v`. All 19 tests pass against the live preview URL. The Stavanger->Athina trunk route generates exactly 8 legs per spec. Stripe checkout creates real test sessions (verified URL contains checkout.stripe.com). The only minor visual issue is the /search page heading missing station labels (cosmetic only, journey cards work perfectly).",
+  "rca of the issue": "N/A - no functional issues found. The /search page header missing station names is purely because the route component does not resolve station IDs from URL params to display names. To fix: in pages.jsx Search component, fetch stations on mount and look up by from_id/to_id, OR have SearchWidget pass &from_name=&to_name= in the redirect URL."
+}
