@@ -22,7 +22,16 @@ Constraints: alles **kostenlos**, **echte Daten** wo möglich, **Test-Zahlung** 
 
 ## What's Been Implemented (Jan 2026)
 
-### Phase 4 (29.01.2026) – Massive Stations DB + Wallet + Funnel
+### Phase 5 (29.01.2026) – Live Push Notifications + Affiliate-Config
+- ✅ **VAPID-Keys** generiert und ins .env eingebaut (Public-Key auch in Frontend-Env exponiert für serviceWorker.pushManager.subscribe)
+- ✅ **Web Push API end-to-end**: `/api/push/public-key`, `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`, `/api/push/notify-delays`. Subscriptions persistiert in `db.push_subs`.
+- ✅ **Background-Poller** `_delay_poller_loop` läuft alle 5 Min beim Backend, prüft Tickets in den nächsten 24h, sendet Push falls Verspätung ≥ 5 min. Per-Ticket+5-min-Bucket Dedupe (db.push_log).
+- ✅ **Service Worker** erweitert: `push`-Event zeigt Notification, `notificationclick` öffnet `/tickets`.
+- ✅ **Frontend PushToggle** auf `/tickets`: Aktivieren/Deaktivieren + „Test senden"-Button.
+- ✅ **Affiliate-Config-UI** auf `/affiliate`: 25 Anbieter mit Eingabefeld für eigene Partner-ID + Direktlink zum jeweiligen Partner-Programm. `resolve_provider_links` hängt `?aid={id}` an alle Deep-Links an, sobald konfiguriert.
+- ✅ Testing: **59/59 Backend pytest** + **100% Frontend** ✅ (Iteration 6, keine Bugs).
+
+### Phase 4 – Massive Stations DB + Wallet + Funnel
 - ✅ **51.290 europäische Bahnhöfe** importiert (Trainline-EU CSV, ~10 MB). Persistiert in MongoDB-Collection `eu_stations`. Auch kleinste Halte sind durchsuchbar (Hattenheim, Carcassonne, Burglengenfeld …). Bulk-Import läuft beim Erststart als asyncio.create_task.
 - ✅ **/api/stations/search** durchsucht jetzt seed + eu_stations + transport.rest hintereinander (seed bevorzugt für Hubs).
 - ✅ **build_synthetic_journey** akzeptiert station_resolver-Map, so funktionieren auch trainline-IDs (`tl_…`) als from_id/to_id.
