@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut, AppleLogo, CalendarPlus, Funnel, Bell, BellSlash, Gear, FloppyDisk } from "@phosphor-icons/react";
-import { trainApi, cartApi, ticketsApi, affiliateApi, pushApi, urlBase64ToUint8Array, fmtTime, fmtDate, fmtDur, fmtPrice, BACKEND_URL } from "./api";
+import { http, trainApi, cartApi, ticketsApi, affiliateApi, pushApi, urlBase64ToUint8Array, fmtTime, fmtDate, fmtDur, fmtPrice, BACKEND_URL } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT } from "./i18n";
 import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill } from "./components";
@@ -10,7 +10,8 @@ import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill } from "./c
 // ============== HOME / Landing ==============
 export function Home() {
   const { t } = useT();
-  const { data: popular } = useQuery({ queryKey: ["popular"], queryFn: trainApi.popular });
+  const { data: recs } = useQuery({ queryKey: ["recommendations"], queryFn: () => http.get("/recommendations?limit=8").then(r => r.data) });
+  const routes = recs?.recommendations || [];
   return (
     <div className="relative">
       <section className="relative overflow-hidden">
@@ -35,20 +36,22 @@ export function Home() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <div className="eyebrow">{t("home.popular.eyebrow")}</div>
-            <h2 className="font-display text-3xl uppercase">{t("home.popular.title")}</h2>
+            <div className="eyebrow">{recs?.personalized ? "Für dich" : "Trending"} · {routes[0]?.source === "trending" ? "Live-Daten" : "Kuratiert"}</div>
+            <h2 className="font-display text-3xl uppercase">{recs?.personalized ? "Empfohlen für dich" : t("home.popular.title")}</h2>
           </div>
           <Link to="/stations" className="btn btn-ghost">{t("home.all_stations")}</Link>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {(popular || []).map((p, i) => (
+          {routes.map((p, i) => (
             <Link key={i} to={`/search?from_id=${p.from_id}&to_id=${p.to_id}&passengers=1`}
-                  className="surface p-5 hover:border-[#E63946] block" data-testid={`popular-${p.from_id}-${p.to_id}`}>
-              <div className="eyebrow flex items-center gap-2"><Train size={12} weight="duotone" /> {p.from.country} → {p.to.country}</div>
-              <div className="font-display text-2xl uppercase mt-3 leading-tight">{p.from.city}<br/>→ {p.to.city}</div>
+                  className="surface p-5 hover:border-[#E63946] block" data-testid={`reco-${p.from_id}-${p.to_id}`}>
+              <div className="eyebrow flex items-center gap-2"><Train size={12} weight="duotone" /> {p.from?.country} → {p.to?.country}
+                {p.source === "trending" && p.score > 0 && <span className="text-[#E63946]">● {p.score}</span>}
+              </div>
+              <div className="font-display text-2xl uppercase mt-3 leading-tight">{p.from?.city}<br/>→ {p.to?.city}</div>
               <div className="mt-4 flex justify-between items-end">
                 <div className="eyebrow">{t("search.from_price")}</div>
-                <div className="font-mono text-xl text-[#FDFBF7]">€{p.price.toFixed(0)}</div>
+                <div className="font-mono text-xl text-[#FDFBF7]">€{Number(p.price).toFixed(0)}</div>
               </div>
             </Link>
           ))}

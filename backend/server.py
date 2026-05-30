@@ -1437,6 +1437,100 @@ async def admin_stats(user=Depends(current_user)):
 
 
 # ---------------------------------------------------------------------------
+# Recommendations engine – data-driven "popular journeys"
+# ---------------------------------------------------------------------------
+@api.get("/recommendations")
+async def recommendations(limit: int = 6, user=Depends(optional_user)):
+    """Score-based recommendations from searches + clicks + tickets in the last 30 days.
+    score = searches + clicks*2 + tickets*5.  Falls back to the curated POPULAR_ROUTES
+    when DB is empty.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    scores: Dict[str, Dict[str, Any]] = {}
+
+    def bump(from_id: Optional[str], to_id: Optional[str], from_name: Optional[str], to_name: Optional[str], weight: int):
+        if not from_id or not to_id:
+            return
+        key = f"{from_id}::{to_id}"
+        scores.setdefault(key, {"from_id": from_id, "to_id": to_id, "from_name": from_name, "to_name": to_name, "score": 0, "searches": 0, "clicks": 0, "tickets": 0})
+        scores[key]["score"] += weight
+
+    async for s in db.searches.find({"ts": {"$gt": cutoff}}).limit(2000):
+        bump(s.get("from_id"), s.get("to_id"), s.get("from_name"), s.get("to_name"), 1)
+        k = f"{s.get('from_id')}::{s.get('to_id')}"
+        if k in scores:
+            scores[k]["searches"] += 1
+
+    async for c in db.affiliate_clicks.find({"ts": {"$gt": cutoff}}).limit(2000):
+        # affiliate_clicks have 'leg' (City->City) and journey_id; resolve via journey_cache
+        jid = c.get("journey_id")
+        if not jid:
+            continue
+        j = await db.journey_cache.find_one({"_id": jid})
+        if not j:
+            continue
+        fid = j["from"]["id"] if isinstance(j["from"], dict) else None
+        tid = j["to"]["id"] if isinstance(j["to"], dict) else None
+        bump(fid, tid, j["from"]["name"], j["to"]["name"], 2)
+        k = f"{fid}::{tid}"
+        if k in scores:
+            scores[k]["clicks"] += 1
+
+    async for tk in db.tickets.find().limit(2000):
+        jid = tk.get("journey_id")
+        if not jid:
+            continue
+        j = await db.journey_cache.find_one({"_id": jid})
+        if not j:
+            continue
+        fid = j["from"]["id"] if isinstance(j["from"], dict) else None
+        tid = j["to"]["id"] if isinstance(j["to"], dict) else None
+        bump(fid, tid, j["from"]["name"], j["to"]["name"], 5)
+        k = f"{fid}::{tid}"
+        if k in scores:
+            scores[k]["tickets"] += 1
+
+    ranked = sorted(scores.values(), key=lambda x: -x["score"])
+
+    # Personalize: for logged in user, surface their own most-searched country pair too
+    if user:
+        async for s in db.searches.find({"user_id": user["id"]}).sort("ts", -1).limit(20):
+            if s.get("from_id") and s.get("to_id"):
+                bump(s["from_id"], s["to_id"], s.get("from_name"), s.get("to_name"), 3)
+        ranked = sorted(scores.values(), key=lambda x: -x["score"])
+
+    # Enrich with station + price estimate
+    enriched: List[Dict[str, Any]] = []
+    for r in ranked[:limit]:
+        a = await resolve_station(r["from_id"]) or {"name": r.get("from_name"), "city": r.get("from_name"), "country": "?", "lat": 0, "lon": 0}
+        b = await resolve_station(r["to_id"]) or {"name": r.get("to_name"), "city": r.get("to_name"), "country": "?", "lat": 0, "lon": 0}
+        km = haversine_km(a, b) if a.get("lat") and b.get("lat") else 0
+        price_est = round(0.09 * km + 12, 0) if km else 49
+        enriched.append({
+            "from_id": r["from_id"], "to_id": r["to_id"],
+            "from": a, "to": b,
+            "score": r["score"], "searches": r["searches"], "clicks": r["clicks"], "tickets": r["tickets"],
+            "price": price_est, "duration_min": int(km / 160 * 60) if km else 180,
+            "source": "trending",
+        })
+
+    # Fallback: curated popular routes
+    if not enriched:
+        for p in POPULAR_ROUTES[:limit]:
+            a, b = _station(p["from_id"]), _station(p["to_id"])
+            if a and b:
+                enriched.append({
+                    "from_id": p["from_id"], "to_id": p["to_id"],
+                    "from": a, "to": b,
+                    "score": 0, "searches": 0, "clicks": 0, "tickets": 0,
+                    "price": p["price"], "duration_min": p["duration_min"],
+                    "source": "curated",
+                })
+
+    return {"recommendations": enriched, "personalized": bool(user)}
+
+
+# ---------------------------------------------------------------------------
 # Affiliate configuration (user-settable provider IDs)
 # ---------------------------------------------------------------------------
 class AffiliateConfigIn(BaseModel):
