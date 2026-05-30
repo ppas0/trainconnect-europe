@@ -2,12 +2,10 @@ services:
   - type: web
     name: trainconnect-europe
     runtime: node
-    region: frankfurt
     plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
