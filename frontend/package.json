@@ -67,7 +67,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "CI=false react-scripts build",
+    "build": "cp -r ../backend/public ./build || mkdir -p build",
     "test": "react-scripts test --watchAll=false"
   },
   "browserslist": {
