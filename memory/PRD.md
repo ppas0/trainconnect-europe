@@ -22,6 +22,12 @@ Constraints: alles **kostenlos**, **echte Daten** wo möglich, **Test-Zahlung** 
 
 ## What's Been Implemented (Jan 2026)
 
+### Phase 6 (30.05.2026) – Production-Ready Fixes + Source-ZIP-Download
+- ✅ **Bug-Fix `/api/recommendations`** – KeyError auf `j["from"]["id"]` behoben. Endpoint nutzt jetzt defensives `isinstance(dict)` + `.get()` für `from`/`to` aus `journey_cache`, fehlende/malformed Docs werden übersprungen statt 500 (server.py ~L1486).
+- ✅ **Startup-Härtung für K8s-Production** – `@app.on_event("startup")` ist jetzt try/except-gekapselt und schiebt den 51k-Trainline-CSV-Import nach 5 s Delay als `asyncio.create_task` ab. Health-Probe `/api/` antwortet <2 s nach Start, Pod-Bind bleibt unblockiert (server.py L1755–1790).
+- ✅ **Source-Code-ZIP-Download** – `/downloads/TrainConnect_Europe_v1.5.zip` (~862 KB) statisch im Frontend `public/`-Ordner, im Footer per `data-testid=footer-download-source-zip` verlinkt. Excludes node_modules, .git, build, __pycache__, .log.
+- ✅ Testing: **Iteration 7 – 10/10 Backend-Regression + 3/3 Frontend-Smoke = PASS**, keine offenen Bugs.
+
 ### Phase 5 (29.01.2026) – Live Push Notifications + Affiliate-Config
 - ✅ **VAPID-Keys** generiert und ins .env eingebaut (Public-Key auch in Frontend-Env exponiert für serviceWorker.pushManager.subscribe)
 - ✅ **Web Push API end-to-end**: `/api/push/public-key`, `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`, `/api/push/notify-delays`. Subscriptions persistiert in `db.push_subs`.
@@ -83,6 +89,8 @@ Constraints: alles **kostenlos**, **echte Daten** wo möglich, **Test-Zahlung** 
 - **Alternative**: alles auf Emergent-Preview-URL (für MVP-Tests reicht das)
 
 ## Next Action Items
-1. User-Feedback einholen (Stripe Test-Card durchspielen, PDF prüfen)
-2. Optional: Cloudflare Pages-Deployment vorbereiten (CRA-Build → `yarn build`)
-3. Bei Bedarf: zweite Welle Stations seeden (Türkei, Balkan, Skandinavien tiefer)
+1. **Re-Deploy in Production** testen – mit dem nun gehärteten Startup-Event sollte der K8s-Pod sauber booten und Health-Probes bestehen.
+2. User-Feedback einholen (Stripe Test-Card durchspielen, PDF prüfen, ZIP herunterladen + lokal entpacken).
+3. Optional: Cloudflare Pages-Deployment vorbereiten (CRA-Build → `yarn build`).
+4. Bei Bedarf: zweite Welle Stations seeden (Türkei, Balkan, Skandinavien tiefer).
+5. P3 – Admin-Dashboard-UI (Backend ist da, Frontend fehlt).
