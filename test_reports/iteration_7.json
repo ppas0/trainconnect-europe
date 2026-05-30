@@ -1,0 +1,56 @@
+{
+  "summary": "Iteration 7 targeted regression on the 3 specific fixes applied by main agent — all PASS. Created /app/backend/tests/test_iteration7_regression.py with 10 pytest cases; ran in 2.36s, 10/10 PASS. Frontend Playwright smoke on home page: hero title, 4 reco-* cards, footer ZIP link all PASS.",
+  "fixes_validated": {
+    "fix1_recommendations_no_500": {
+      "status": "PASS",
+      "evidence": "GET /api/recommendations?limit=4 → 200 with 4 items; ?limit=8 → 200. KeyError on j['from'] fix at server.py line 1490-1493 (defensive .get() + isinstance dict check + skip) verified working. Frontend home page renders 4 cards using these results."
+    },
+    "fix2_startup_non_blocking": {
+      "status": "PASS",
+      "evidence": "GET /api/ responded in <2s (test_api_root_responds_under_2s). server.py:1750-1782 hardened startup uses try/except + asyncio.create_task for _bg_import with 5s sleep before heavy trainline CSV import; logger reports 'TrainConnect API ready - N seed stations' immediately. Backend supervisor logs show clean bind."
+    },
+    "fix3_zip_download": {
+      "status": "PASS",
+      "evidence": "GET https://analyze-improve-6.preview.emergentagent.com/downloads/TrainConnect_Europe_v1.5.zip → 200, content starts with PK magic bytes, content-type contains 'zip' or octet-stream. File exists at /app/frontend/public/downloads/TrainConnect_Europe_v1.5.zip. Frontend footer renders link with data-testid=footer-download-source-zip showing '⬇ Quellcode herunterladen (ZIP)' and href '/downloads/TrainConnect_Europe_v1.5.zip'."
+    }
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "regression_results": {
+    "test_recommendations_limit_4_returns_200": "PASS",
+    "test_recommendations_limit_8_returns_200": "PASS",
+    "test_api_root_responds_under_2s": "PASS",
+    "test_zip_download_serves_application_zip": "PASS",
+    "test_popular_routes_200": "PASS",
+    "test_stations_search_berlin": "PASS",
+    "test_journeys_search_berlin_munich": "PASS",
+    "test_auth_login_demo_user": "PASS",
+    "test_affiliate_stats_requires_auth": "PASS",
+    "test_affiliate_config_authed": "PASS"
+  },
+  "frontend_smoke": {
+    "home_hero_title": "PASS (One ticket. All of Europe.)",
+    "recommendations_grid_count": "PASS (4 reco-* cards rendered: Stavanger→Athína, Berlin→München, Berlin→Carcassonne, Ankara→Manchester)",
+    "footer_download_source_zip": "PASS (visible, href=/downloads/TrainConnect_Europe_v1.5.zip, label '⬇ Quellcode herunterladen (ZIP)')",
+    "console_errors": "None blocking"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration7_regression.py",
+    "/app/test_reports/pytest/iteration7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:1490-1493 fix is correct — uses isinstance dict check before .get() so any malformed journey_cache doc (no from/to, or non-dict) is now skipped instead of crashing. Good defensive coding.",
+    "server.py:1760-1783 deferred bg import is well-structured: 5s sleep gives readiness probe time to pass; idempotent (skips if >=1000 docs already imported); wrapped in try/except so a network blip during CSV fetch never breaks startup. Solid K8s-ready pattern.",
+    "Minor: still using deprecated @app.on_event('startup') (FastAPI ≥0.93 prefers lifespan context manager). Carry-over from iter_6 review — non-blocking.",
+    "ZIP is served via the React dev server (frontend/public/downloads/). In production build (yarn build), the file needs to be copied to the build output and served by the static host. Confirm production deployment includes /public/downloads/ — currently relies on CRA/Vite default static handling which DOES include /public/ contents in /build/. OK."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration7_regression.py", "/app/test_reports/iteration_7.json"],
+  "success_rate": {"backend": "100% (10/10 targeted regression)", "frontend": "100% (3/3 smoke checks)"},
+  "test_credentials": "demo@trainconnect.eu / demo123 (verified login returns JWT token via /api/auth/login).",
+  "seed_data_creation": "None new. Reused existing seed_stations + popular_routes + journey_cache + demo user from prior iterations.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 3 fixes from this iteration validated green. Prior 59/59 iter_6 regression remains green for the surface tested here (recommendations, popular-routes, journeys/search, stations/search, auth/login, affiliate/stats, affiliate/config). To re-run: `python -m pytest /app/backend/tests/test_iteration7_regression.py -v`. Test file uses python-dotenv to load /app/frontend/.env (works without env var export).",
+  "rca of the issue": "No new issues. The three fixes from main agent are correct and complete: (1) defensive isinstance/dict-check on journey_cache['from'/'to'] prevents the 500; (2) try/except wrap + asyncio.create_task for heavy CSV import keeps startup <2s; (3) static ZIP served correctly via React /public/downloads path with PK magic bytes and 862KB size matching spec."
+}

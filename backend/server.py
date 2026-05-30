@@ -1469,9 +1469,13 @@ async def recommendations(limit: int = 6, user=Depends(optional_user)):
         j = await db.journey_cache.find_one({"_id": jid})
         if not j:
             continue
-        fid = j["from"]["id"] if isinstance(j["from"], dict) else None
-        tid = j["to"]["id"] if isinstance(j["to"], dict) else None
-        bump(fid, tid, j["from"]["name"], j["to"]["name"], 2)
+        jf = j.get("from") if isinstance(j.get("from"), dict) else None
+        jt = j.get("to") if isinstance(j.get("to"), dict) else None
+        if not jf or not jt:
+            continue
+        fid = jf.get("id")
+        tid = jt.get("id")
+        bump(fid, tid, jf.get("name"), jt.get("name"), 2)
         k = f"{fid}::{tid}"
         if k in scores:
             scores[k]["clicks"] += 1
@@ -1483,9 +1487,13 @@ async def recommendations(limit: int = 6, user=Depends(optional_user)):
         j = await db.journey_cache.find_one({"_id": jid})
         if not j:
             continue
-        fid = j["from"]["id"] if isinstance(j["from"], dict) else None
-        tid = j["to"]["id"] if isinstance(j["to"], dict) else None
-        bump(fid, tid, j["from"]["name"], j["to"]["name"], 5)
+        jf = j.get("from") if isinstance(j.get("from"), dict) else None
+        jt = j.get("to") if isinstance(j.get("to"), dict) else None
+        if not jf or not jt:
+            continue
+        fid = jf.get("id")
+        tid = jt.get("id")
+        bump(fid, tid, jf.get("name"), jt.get("name"), 5)
         k = f"{fid}::{tid}"
         if k in scores:
             scores[k]["tickets"] += 1
@@ -1741,21 +1749,37 @@ async def _delay_poller_loop():
 
 @app.on_event("startup")
 async def _push_startup():
-    asyncio.create_task(_delay_poller_loop())
-    if await db.stations.count_documents({}) == 0:
-        await db.stations.insert_many([{**s, "_id": s["id"]} for s in SEED_STATIONS])
-    if await db.popular_routes.count_documents({}) == 0:
-        await db.popular_routes.insert_many(POPULAR_ROUTES)
-    # Trigger Trainline EU stations import in background (only first time)
-    if await db.eu_stations.count_documents({}) < 1000:
-        async def _bg_import():
-            try:
-                logger.info("Starting Trainline EU stations import...")
-                res = await import_trainline_stations()
-                logger.info("Trainline import done: %s", res)
-            except Exception as e:
-                logger.warning("Trainline import failed: %s", e)
-        asyncio.create_task(_bg_import())
+    """Non-blocking startup: seed only if empty, push heavy work to background.
+
+    Kubernetes readiness/liveness probes can fail in production if startup blocks
+    for more than a few seconds. We therefore:
+      - Run light seed inserts directly (cheap; ~100 docs each).
+      - Defer the trainline 51k-station CSV import to a background task.
+      - Catch all errors so a hiccup never prevents the app from binding.
+    """
+    try:
+        asyncio.create_task(_delay_poller_loop())
+        if await db.stations.count_documents({}) == 0:
+            await db.stations.insert_many([{**s, "_id": s["id"]} for s in SEED_STATIONS])
+        if await db.popular_routes.count_documents({}) == 0:
+            await db.popular_routes.insert_many(POPULAR_ROUTES)
+    except Exception as e:  # never block startup on seed errors
+        logger.warning("seed startup error: %s", e)
+
+    async def _bg_import():
+        try:
+            # give the event loop a moment so health checks pass first
+            await asyncio.sleep(5)
+            if await db.eu_stations.count_documents({}) >= 1000:
+                logger.info("Trainline EU stations already imported; skipping.")
+                return
+            logger.info("Starting Trainline EU stations import (background)...")
+            res = await import_trainline_stations()
+            logger.info("Trainline import done: %s", res)
+        except Exception as e:
+            logger.warning("Trainline import failed: %s", e)
+
+    asyncio.create_task(_bg_import())
     logger.info("TrainConnect API ready - %d seed stations", len(SEED_STATIONS))
 
 

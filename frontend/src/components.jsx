@@ -109,6 +109,14 @@ export function Footer() {
         <div>
           <div className="text-xs">Demo-Hinweis</div>
           <div className="text-xs normal-case tracking-normal font-body mt-2">Diese Plattform befindet sich im MVP-Testmodus. Zahlungen über Stripe-Testumgebung. Buchungen sind Demo-Reservierungen.</div>
+          <a
+            href="/downloads/TrainConnect_Europe_v1.5.zip"
+            download
+            className="inline-block mt-3 text-xs normal-case tracking-normal font-body text-[#E63946] hover:text-white underline"
+            data-testid="footer-download-source-zip"
+          >
+            ⬇ Quellcode herunterladen (ZIP)
+          </a>
         </div>
       </div>
     </footer>
