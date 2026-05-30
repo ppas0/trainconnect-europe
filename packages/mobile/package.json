@@ -1,0 +1,29 @@
+{
+  "name": "trainconnect-mobile",
+  "version": "1.7.0",
+  "description": "TrainConnect Europe – Mobile App (iOS & Android) via Capacitor",
+  "scripts": {
+    "build:android": "cross-env REACT_APP_BACKEND_URL=http://10.0.2.2:5000 npm run build --prefix ../../frontend && npx cap sync android",
+    "build:ios":     "cross-env REACT_APP_BACKEND_URL=http://localhost:5000 npm run build --prefix ../../frontend && npx cap sync ios",
+    "build:device":  "cross-env REACT_APP_BACKEND_URL=http://YOUR_PC_IP:5000 npm run build --prefix ../../frontend && npx cap sync",
+    "open:android":  "npx cap open android",
+    "open:ios":      "npx cap open ios",
+    "sync":          "npx cap sync",
+    "apk:debug":     "cd android && gradlew.bat assembleDebug",
+    "apk:release":   "cd android && gradlew.bat assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/haptics": "^7.0.1",
+    "@capacitor/ios": "^7.2.0",
+    "@capacitor/keyboard": "^7.0.1",
+    "@capacitor/network": "^7.0.1",
+    "@capacitor/status-bar": "^7.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.2.0",
+    "cross-env": "^7.0.3"
+  }
+}

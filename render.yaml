@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: trainconnect-europe
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: >-
+      cd frontend &&
+      yarn install --frozen-lockfile --network-timeout 300000 &&
+      yarn build &&
+      mkdir -p ../backend/public &&
+      cp -r build/. ../backend/public/ &&
+      cd ../backend &&
+      npm install
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_MIN
+        value: "10080"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: TRANSPORT_REST_BASE
+        value: https://v6.db.transport.rest
+      - key: VAPID_PUBLIC_KEY
+        value: BBtqVXaeWnmt5FTRE1HhLwJB9SpPrYS-RwpSN1Z44b0umEcHLNIjlXVJdY-rYScyS7-nz-r-IyK1cdp_2a77UNk
+      - key: VAPID_CONTACT
+        value: mailto:admin@trainconnect.eu

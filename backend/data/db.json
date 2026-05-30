@@ -1,0 +1,546 @@
+{
+  "users": [
+    {
+      "id": "6220eeac-bf37-4ef3-9571-ad968a800ee0",
+      "email": "test@bfh.ch",
+      "passwordHash": "$2b$12$gwUsTZOrZeaF3WT04Xms.OYz0rKbjCwn92bcGEI7Y8LaVpOB/NrFu",
+      "name": "Test User",
+      "role": "user",
+      "createdAt": "2026-05-30T10:59:10.873Z",
+      "loyaltyPoints": 0
+    },
+    {
+      "id": "b70bf7c6-6ed3-4598-8190-23e03c0a167e",
+      "email": "kauftest@bfh.ch",
+      "passwordHash": "$2b$12$XZKf5SfwaBp5V98n6R9mx.a7rUWsO7ngYx5ITYjDO.jzZLwDbinVq",
+      "name": "Kauf Tester",
+      "role": "user",
+      "createdAt": "2026-05-30T11:54:14.913Z",
+      "loyaltyPoints": 0
+    },
+    {
+      "id": "bb363361-bea7-4d65-ae49-c446d53419d7",
+      "email": "ppas@posteo.com",
+      "passwordHash": "$2b$12$DFlF2HWjtC59IVpBkqHzXODzQAmKnkSJILQH/wpFhJ6vUXu2SSg9O",
+      "name": "Tester1",
+      "role": "user",
+      "createdAt": "2026-05-30T12:38:57.178Z",
+      "loyaltyPoints": 0
+    },
+    {
+      "id": "30446e7f-1686-497d-8960-b61062fa63da",
+      "email": "testcheck_171427@bfh.ch",
+      "passwordHash": "$2b$12$kUzB9Dt/lLlyfYXMF3vdfu2pSyIqRcI9PqeHICbNyD3UYw4Br/naK",
+      "name": "FunctionTest",
+      "role": "user",
+      "createdAt": "2026-05-30T15:14:28.216Z",
+      "loyaltyPoints": 0
+    },
+    {
+      "id": "bc0c9d37-9844-4a98-8914-2e86153f2165",
+      "email": "restart_171633@bfh.ch",
+      "passwordHash": "$2b$12$8ukhanpZsa8/LeSc5XWQr.UE/quF3mTQPyiGhxvVTyUI/PYG.IWTu",
+      "name": "RestartTest",
+      "role": "user",
+      "createdAt": "2026-05-30T15:16:33.991Z",
+      "loyaltyPoints": 0
+    }
+  ],
+  "tickets": [
+    {
+      "id": "f9e0b172-0e07-4589-a825-7788939a33cd",
+      "pnr": "TC-ZI6UQK",
+      "userId": "b70bf7c6-6ed3-4598-8190-23e03c0a167e",
+      "from": "Zürich HB",
+      "to": "Berlin Hbf",
+      "fromId": "ZRH",
+      "toId": "BER",
+      "departure": "2026-06-05T08:00:00.000Z",
+      "arrival": "2026-06-05T11:46:00.000Z",
+      "passengers": 2,
+      "price": 141,
+      "operator": "DB (Deutsche Bahn)",
+      "trainNo": "AVE 769",
+      "status": "confirmed",
+      "journeyId": "ddf2922d-fb8b-4764-8a4f-1f041617c918",
+      "legs": [
+        {
+          "leg_id": "c0feb9ac-3b5e-4334-a0c0-c11f18021b27",
+          "from": {
+            "id": "ZRH",
+            "name": "Zürich HB",
+            "city": "Zürich",
+            "country": "CH",
+            "lat": 47.3783,
+            "lon": 8.5404
+          },
+          "to": {
+            "id": "BER",
+            "name": "Berlin Hbf",
+            "city": "Berlin",
+            "country": "DE",
+            "lat": 52.5251,
+            "lon": 13.3694
+          },
+          "departure": "2026-06-05T08:00:00.000Z",
+          "arrival": "2026-06-05T11:46:00.000Z",
+          "duration_min": 226,
+          "operator": "DB (Deutsche Bahn)",
+          "train_no": "AVE 769",
+          "platform": "1",
+          "delay_min": 0,
+          "polyline": [
+            [
+              47.3783,
+              8.5404
+            ],
+            [
+              47.88224,
+              9.03475
+            ],
+            [
+              48.38722,
+              9.52798
+            ],
+            [
+              48.89421,
+              10.01908
+            ],
+            [
+              49.40395,
+              10.50724
+            ],
+            [
+              49.91693,
+              10.99196
+            ],
+            [
+              50.43331,
+              11.47304
+            ],
+            [
+              50.95293,
+              11.95068
+            ],
+            [
+              51.4753,
+              12.42538
+            ],
+            [
+              51.99968,
+              12.89795
+            ],
+            [
+              52.5251,
+              13.3694
+            ]
+          ]
+        }
+      ],
+      "createdAt": "2026-05-30T11:54:50.259Z"
+    },
+    {
+      "id": "133de4ca-597c-488d-8487-115d95c04316",
+      "pnr": "TC-9SGRGB",
+      "userId": "bb363361-bea7-4d65-ae49-c446d53419d7",
+      "from": "Bern Hbf",
+      "to": "Zürich HB",
+      "fromId": "BRN",
+      "toId": "ZRH",
+      "departure": "2026-06-10T09:00:00.000Z",
+      "arrival": "2026-06-10T09:41:00.000Z",
+      "passengers": 1,
+      "price": 15,
+      "operator": "SBB CFF FFS",
+      "trainNo": "Frecciarossa 887",
+      "status": "confirmed",
+      "journeyId": "58782133-5ab0-4c9a-99fe-1c371baf55ba",
+      "legs": [
+        {
+          "leg_id": "68ffe11c-192d-463c-9ae6-b1fcbcb5c180",
+          "from": {
+            "id": "BRN",
+            "name": "Bern Hbf",
+            "city": "Bern",
+            "country": "CH",
+            "lat": 46.9488,
+            "lon": 7.4393
+          },
+          "to": {
+            "id": "ZRH",
+            "name": "Zürich HB",
+            "city": "Zürich",
+            "country": "CH",
+            "lat": 47.3783,
+            "lon": 8.5404
+          },
+          "departure": "2026-06-10T09:00:00.000Z",
+          "arrival": "2026-06-10T09:41:00.000Z",
+          "duration_min": 41,
+          "operator": "SBB CFF FFS",
+          "train_no": "Frecciarossa 887",
+          "platform": "7",
+          "delay_min": 0,
+          "polyline": [
+            [
+              46.9488,
+              7.4393
+            ],
+            [
+              46.9893,
+              7.55037
+            ],
+            [
+              47.03004,
+              7.66134
+            ],
+            [
+              47.07124,
+              7.77213
+            ],
+            [
+              47.11306,
+              7.88268
+            ],
+            [
+              47.15562,
+              7.99294
+            ],
+            [
+              47.19896,
+              8.1029
+            ],
+            [
+              47.24304,
+              8.21257
+            ],
+            [
+              47.28774,
+              8.322
+            ],
+            [
+              47.3329,
+              8.43125
+            ],
+            [
+              47.3783,
+              8.5404
+            ]
+          ]
+        }
+      ],
+      "createdAt": "2026-05-30T12:49:54.280Z"
+    },
+    {
+      "id": "a4422dae-1ada-45c2-b7b0-8ab8be26985b",
+      "pnr": "TC-K37FTI",
+      "userId": "30446e7f-1686-497d-8960-b61062fa63da",
+      "from": "Berlin Hbf",
+      "to": "München Hbf",
+      "fromId": "BER",
+      "toId": "MUC",
+      "departure": "2026-05-31T08:00:00.000Z",
+      "arrival": "2026-05-31T10:34:00.000Z",
+      "passengers": 1,
+      "price": 43,
+      "operator": "DB (Deutsche Bahn)",
+      "trainNo": "ICE 291",
+      "status": "confirmed",
+      "journeyId": "a9ca60e0-3618-44e4-af3c-0b7c1825a39f",
+      "legs": [
+        {
+          "leg_id": "0dd0e55b-39cb-41c6-87cb-a1431bc96d7c",
+          "from": {
+            "id": "BER",
+            "name": "Berlin Hbf",
+            "city": "Berlin",
+            "country": "DE",
+            "lat": 52.5251,
+            "lon": 13.3694
+          },
+          "to": {
+            "id": "MUC",
+            "name": "München Hbf",
+            "city": "München",
+            "country": "DE",
+            "lat": 48.1402,
+            "lon": 11.5602
+          },
+          "departure": "2026-05-31T08:00:00.000Z",
+          "arrival": "2026-05-31T10:34:00.000Z",
+          "duration_min": 154,
+          "operator": "DB (Deutsche Bahn)",
+          "train_no": "ICE 291",
+          "platform": "11",
+          "delay_min": 0,
+          "polyline": [
+            [
+              52.5251,
+              13.3694
+            ],
+            [
+              52.09064,
+              13.17872
+            ],
+            [
+              51.65578,
+              12.989
+            ],
+            [
+              51.22017,
+              12.8011
+            ],
+            [
+              50.78353,
+              12.61569
+            ],
+            [
+              50.34568,
+              12.43323
+            ],
+            [
+              49.90655,
+              12.25385
+            ],
+            [
+              49.46621,
+              12.07742
+            ],
+            [
+              49.02484,
+              11.90348
+            ],
+            [
+              48.58272,
+              11.73136
+            ],
+            [
+              48.1402,
+              11.5602
+            ]
+          ]
+        }
+      ],
+      "createdAt": "2026-05-30T15:15:01.617Z"
+    },
+    {
+      "id": "2d2eda9d-ff5e-45b9-b59d-0acb8c3f5273",
+      "pnr": "TC-HCLJAA",
+      "userId": "bc0c9d37-9844-4a98-8914-2e86153f2165",
+      "from": "Berlin Hbf",
+      "to": "München Hbf",
+      "fromId": "BER",
+      "toId": "MUC",
+      "departure": "2026-05-31T08:00:00.000Z",
+      "arrival": "2026-05-31T10:38:00.000Z",
+      "passengers": 1,
+      "price": 61,
+      "operator": "DB (Deutsche Bahn)",
+      "trainNo": "ICE 223",
+      "status": "confirmed",
+      "journeyId": "79371c27-4f8c-4710-8ba2-2aad0f431142",
+      "legs": [
+        {
+          "leg_id": "54a609d2-cd65-4a31-bd51-d6a72727a498",
+          "from": {
+            "id": "BER",
+            "name": "Berlin Hbf",
+            "city": "Berlin",
+            "country": "DE",
+            "lat": 52.5251,
+            "lon": 13.3694
+          },
+          "to": {
+            "id": "MUC",
+            "name": "München Hbf",
+            "city": "München",
+            "country": "DE",
+            "lat": 48.1402,
+            "lon": 11.5602
+          },
+          "departure": "2026-05-31T08:00:00.000Z",
+          "arrival": "2026-05-31T10:38:00.000Z",
+          "duration_min": 158,
+          "operator": "DB (Deutsche Bahn)",
+          "train_no": "ICE 223",
+          "platform": "5",
+          "delay_min": 0,
+          "polyline": [
+            [
+              52.5251,
+              13.3694
+            ],
+            [
+              52.09064,
+              13.17872
+            ],
+            [
+              51.65578,
+              12.989
+            ],
+            [
+              51.22017,
+              12.8011
+            ],
+            [
+              50.78353,
+              12.61569
+            ],
+            [
+              50.34568,
+              12.43323
+            ],
+            [
+              49.90655,
+              12.25385
+            ],
+            [
+              49.46621,
+              12.07742
+            ],
+            [
+              49.02484,
+              11.90348
+            ],
+            [
+              48.58272,
+              11.73136
+            ],
+            [
+              48.1402,
+              11.5602
+            ]
+          ]
+        }
+      ],
+      "createdAt": "2026-05-30T15:16:34.089Z"
+    }
+  ],
+  "carts": [
+    {
+      "id": "8451febc-b734-4414-813f-254d611b6c85",
+      "userId": "b70bf7c6-6ed3-4598-8190-23e03c0a167e",
+      "items": [
+        {
+          "journey_id": "ddf2922d-fb8b-4764-8a4f-1f041617c918",
+          "passengers": 2
+        }
+      ],
+      "status": "paid",
+      "createdAt": "2026-05-30T11:54:50.230Z",
+      "sessionId": "SESS-5D67DBD4-77A"
+    },
+    {
+      "id": "ca2d4f52-b5be-442a-8d25-8ff468035889",
+      "userId": "bb363361-bea7-4d65-ae49-c446d53419d7",
+      "items": [
+        {
+          "journey_id": "58782133-5ab0-4c9a-99fe-1c371baf55ba",
+          "passengers": 1
+        }
+      ],
+      "status": "paid",
+      "createdAt": "2026-05-30T12:49:54.258Z",
+      "sessionId": "SESS-91E7E80C-B18"
+    },
+    {
+      "id": "bf9e0bdb-6a5d-4cc2-affc-46043413c775",
+      "userId": "30446e7f-1686-497d-8960-b61062fa63da",
+      "items": [
+        {
+          "passengers": 1,
+          "journey_id": "a9ca60e0-3618-44e4-af3c-0b7c1825a39f"
+        }
+      ],
+      "status": "paid",
+      "createdAt": "2026-05-30T15:15:01.584Z",
+      "sessionId": "SESS-9F67A268-149"
+    },
+    {
+      "id": "1d0201c7-97c1-45c1-8ada-3c01ccadd8d9",
+      "userId": "bc0c9d37-9844-4a98-8914-2e86153f2165",
+      "items": [
+        {
+          "journey_id": "79371c27-4f8c-4710-8ba2-2aad0f431142",
+          "passengers": 1
+        }
+      ],
+      "status": "paid",
+      "createdAt": "2026-05-30T15:16:34.072Z",
+      "sessionId": "SESS-94E7E5D0-AA5"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "SESS-5D67DBD4-77A",
+      "cartId": "8451febc-b734-4414-813f-254d611b6c85",
+      "userId": "b70bf7c6-6ed3-4598-8190-23e03c0a167e",
+      "payment_status": "paid",
+      "status": "complete",
+      "createdAt": "2026-05-30T11:54:50.258Z"
+    },
+    {
+      "id": "SESS-91E7E80C-B18",
+      "cartId": "ca2d4f52-b5be-442a-8d25-8ff468035889",
+      "userId": "bb363361-bea7-4d65-ae49-c446d53419d7",
+      "payment_status": "paid",
+      "status": "complete",
+      "createdAt": "2026-05-30T12:49:54.276Z"
+    },
+    {
+      "id": "SESS-9F67A268-149",
+      "cartId": "bf9e0bdb-6a5d-4cc2-affc-46043413c775",
+      "userId": "30446e7f-1686-497d-8960-b61062fa63da",
+      "payment_status": "paid",
+      "status": "complete",
+      "createdAt": "2026-05-30T15:15:01.614Z"
+    },
+    {
+      "id": "SESS-94E7E5D0-AA5",
+      "cartId": "1d0201c7-97c1-45c1-8ada-3c01ccadd8d9",
+      "userId": "bc0c9d37-9844-4a98-8914-2e86153f2165",
+      "payment_status": "paid",
+      "status": "complete",
+      "createdAt": "2026-05-30T15:16:34.085Z"
+    }
+  ],
+  "affiliateClicks": [
+    {
+      "id": "a4198820-8333-4c51-a62a-3a69ca7a5b74",
+      "provider": "DB ICE",
+      "country": "DE",
+      "journey_id": "testjid",
+      "leg": "BER→MUC",
+      "url": "https://bahn.de",
+      "userId": "30446e7f-1686-497d-8960-b61062fa63da",
+      "ts": "2026-05-30T15:15:35.362Z"
+    }
+  ],
+  "affiliateConfig": [
+    {
+      "provider": "DB ICE",
+      "affiliate_id": "BFH2026"
+    }
+  ],
+  "priceAlerts": [
+    {
+      "id": "f10b85cc-ba42-4d25-8c36-7ff99840ebc3",
+      "userId": "b70bf7c6-6ed3-4598-8190-23e03c0a167e",
+      "from_id": "ZRH",
+      "to_id": "BER",
+      "from_city": "Zürich",
+      "to_city": "Berlin",
+      "threshold": 80,
+      "passengers": 1,
+      "last_price": 82,
+      "active": true,
+      "createdAt": "2026-05-30T11:55:16.180Z"
+    }
+  ],
+  "pushSubscriptions": [],
+  "errors": [],
+  "meta": {
+    "version": "1.7",
+    "created": "2026-05-30T10:59:10.643Z"
+  }
+}

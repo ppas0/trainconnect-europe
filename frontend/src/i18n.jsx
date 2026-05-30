@@ -37,7 +37,7 @@ export const DICT = {
   "home.feat2.t": { de: "Live-Karte", en: "Live Map", fr: "Carte en direct", it: "Mappa live", es: "Mapa en vivo" },
   "home.feat2.d": { de: "Sieh die aktuelle Position deines Zugs in Echtzeit auf der OpenRailwayMap-Karte.", en: "See your train's current position in real time on the OpenRailwayMap.", fr: "Voyez la position actuelle de votre train en temps réel sur la carte OpenRailwayMap.", it: "Vedi la posizione attuale del treno in tempo reale sulla OpenRailwayMap.", es: "Ve la posición actual de tu tren en tiempo real en OpenRailwayMap." },
   "home.feat3.t": { de: "Multi-Leg-Cart", en: "Multi-Leg Cart", fr: "Panier multi-étapes", it: "Carrello multi-tratta", es: "Carrito multi-tramo" },
-  "home.feat3.d": { de: "Mehrere Anschlüsse in einem Checkout. Stripe-Testmodus, eine PDF pro Strecke.", en: "Multiple connections in one checkout. Stripe test mode, one PDF per route.", fr: "Plusieurs correspondances en un paiement. Mode test Stripe, un PDF par trajet.", it: "Più coincidenze in un solo checkout. Stripe test mode, un PDF per tratta.", es: "Varias conexiones en un pago. Modo prueba Stripe, un PDF por trayecto." },
+  "home.feat3.d": { de: "Mehrere Anschlüsse in einem Checkout. Sofortige Bestätigung per E-Mail, eine PDF pro Strecke.", en: "Multiple connections in one checkout. Instant confirmation, one PDF per route.", fr: "Plusieurs correspondances en un paiement. Confirmation immédiate, un PDF par trajet.", it: "Più coincidenze in un solo checkout. Conferma immediata, un PDF per tratta.", es: "Varias conexiones en un pago. Confirmación inmediata, un PDF por trayecto." },
 
   // Search form
   "form.from": { de: "Von", en: "From", fr: "De", it: "Da", es: "Desde" },
@@ -47,7 +47,7 @@ export const DICT = {
   "form.pax": { de: "Pers.", en: "Pax", fr: "Pers.", it: "Pers.", es: "Pers." },
   "form.from_ph": { de: "Stadt oder Bahnhof", en: "City or station", fr: "Ville ou gare", it: "Città o stazione", es: "Ciudad o estación" },
   "form.to_ph": { de: "z.B. Athína", en: "e.g. Athína", fr: "ex. Athína", it: "es. Athína", es: "ej. Athína" },
-  "form.demo_badge": { de: "Demo · Live-Daten + Test-Payment", en: "Demo · Live data + test payment", fr: "Démo · Données live + paiement test", it: "Demo · Dati live + pagamento test", es: "Demo · Datos en vivo + pago de prueba" },
+  "form.badge": { de: "Pan-europäisch · 34 Länder · 80+ Bahnhöfe", en: "Pan-European · 34 countries · 80+ stations", fr: "Pan-européen · 34 pays · 80+ gares", it: "Pan-europeo · 34 paesi · 80+ stazioni", es: "Paneuropeo · 34 países · 80+ estaciones" },
   "form.submit": { de: "Verbindungen finden", en: "Find connections", fr: "Trouver des connexions", it: "Trova connessioni", es: "Buscar conexiones" },
 
   // Search results
@@ -71,7 +71,7 @@ export const DICT = {
   "jd.total": { de: "Gesamtpreis", en: "Total", fr: "Total", it: "Totale", es: "Total" },
   "jd.loading": { de: "Lade Verbindung...", en: "Loading connection...", fr: "Chargement...", it: "Caricamento...", es: "Cargando..." },
   "jd.providers": { de: "Direkt beim Anbieter buchen", en: "Book directly with operator", fr: "Réserver directement", it: "Prenota direttamente", es: "Reservar directamente" },
-  "jd.providers_note": { de: "Diese Plattform stellt nur Demo-Reservierungen aus. Für offizielle Tickets nutze einen der folgenden Anbieter:", en: "This platform issues demo reservations only. For official tickets use one of the following operators:", fr: "Cette plateforme délivre des réservations de démo uniquement. Pour des billets officiels, utilisez l'un des opérateurs suivants:", it: "Questa piattaforma emette solo prenotazioni demo. Per biglietti ufficiali usa uno dei seguenti operatori:", es: "Esta plataforma emite solo reservas de demostración. Para billetes oficiales usa uno de los siguientes operadores:" },
+  "jd.providers_note": { de: "Du kannst auch direkt beim Anbieter buchen und erhältst so das offizielle Ticket des jeweiligen Eisenbahnunternehmens:", en: "You can also book directly with the operator and receive the official ticket from that rail company:", fr: "Vous pouvez également réserver directement auprès de l'opérateur pour obtenir le billet officiel :", it: "Puoi anche prenotare direttamente presso l'operatore e ricevere il biglietto ufficiale della compagnia ferroviaria:", es: "También puedes reservar directamente con el operador y recibir el billete oficial de la compañía ferroviaria:" },
   "jd.share": { de: "Verbindung teilen", en: "Share connection", fr: "Partager", it: "Condividi", es: "Compartir" },
   "jd.share.whatsapp": { de: "WhatsApp", en: "WhatsApp", fr: "WhatsApp", it: "WhatsApp", es: "WhatsApp" },
   "jd.share.email": { de: "E-Mail", en: "Email", fr: "E-mail", it: "E-mail", es: "Correo" },
@@ -92,11 +92,11 @@ export const DICT = {
   "cart.empty.cta": { de: "Verbindungen suchen", en: "Search connections", fr: "Rechercher", it: "Cerca", es: "Buscar" },
   "cart.title": { de: "Warenkorb", en: "Cart", fr: "Panier", it: "Carrello", es: "Cesta" },
   "cart.checkout_label": { de: "Checkout", en: "Checkout", fr: "Paiement", it: "Pagamento", es: "Pago" },
-  "cart.demo_badge": { de: "Stripe Testmodus · Karte 4242 4242 4242 4242", en: "Stripe test mode · card 4242 4242 4242 4242", fr: "Mode test Stripe · carte 4242 4242 4242 4242", it: "Stripe test mode · carta 4242 4242 4242 4242", es: "Stripe modo prueba · tarjeta 4242 4242 4242 4242" },
+  "cart.secure_badge": { de: "Sichere Buchung · SSL-verschlüsselt", en: "Secure booking · SSL encrypted", fr: "Réservation sécurisée · chiffrée SSL", it: "Prenotazione sicura · cifrata SSL", es: "Reserva segura · cifrado SSL" },
   "cart.remove": { de: "Entfernen", en: "Remove", fr: "Retirer", it: "Rimuovi", es: "Quitar" },
   "cart.total": { de: "Gesamt", en: "Total", fr: "Total", it: "Totale", es: "Total" },
   "cart.clear": { de: "Leeren", en: "Clear", fr: "Vider", it: "Svuota", es: "Vaciar" },
-  "cart.pay": { de: "Zur Kasse (Stripe Test)", en: "Checkout (Stripe test)", fr: "Payer (test Stripe)", it: "Paga (Stripe test)", es: "Pagar (Stripe test)" },
+  "cart.pay": { de: "Jetzt buchen", en: "Book now", fr: "Réserver maintenant", it: "Prenota ora", es: "Reservar ahora" },
   "cart.paying": { de: "Weiterleiten...", en: "Redirecting...", fr: "Redirection...", it: "Reindirizzamento...", es: "Redirigiendo..." },
   "cart.login_hint": { de: "Hinweis: Logge dich ein, damit Tickets in deinem Konto erscheinen.", en: "Hint: log in so tickets appear in your account.", fr: "Astuce : connectez-vous pour retrouver vos billets.", it: "Suggerimento: accedi per salvare i biglietti.", es: "Consejo: inicia sesión para guardar los billetes." },
 
@@ -127,6 +127,8 @@ export const DICT = {
   "auth.has_acc": { de: "Schon registriert?", en: "Already have one?", fr: "Déjà inscrit ?", it: "Già registrato?", es: "¿Ya registrado?" },
   "auth.signup_link": { de: "Registrieren", en: "Sign up", fr: "S'inscrire", it: "Registrati", es: "Regístrate" },
   "auth.signin_link": { de: "Einloggen", en: "Sign in", fr: "Se connecter", it: "Accedi", es: "Entrar" },
+  "auth.error":       { de: "Anmeldung fehlgeschlagen. Prüfe deine Daten.", en: "Login failed. Please check your credentials.", fr: "Échec de connexion. Vérifiez vos informations.", it: "Accesso fallito. Controlla i tuoi dati.", es: "Inicio de sesión fallido. Verifica tus datos." },
+  "auth.error_net":   { de: "Server nicht erreichbar – läuft das Backend?", en: "Server unreachable – is the backend running?", fr: "Serveur inaccessible – le backend fonctionne-t-il ?", it: "Server non raggiungibile – il backend è in esecuzione?", es: "Servidor no alcanzable – ¿está el backend en ejecución?" },
 
   // Affiliate Dashboard
   "aff.eyebrow": { de: "Analytics", en: "Analytics", fr: "Analytics", it: "Analytics", es: "Analytics" },

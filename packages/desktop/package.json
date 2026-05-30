@@ -1,0 +1,124 @@
+{
+  "name": "trainconnect-europe",
+  "version": "1.7.0",
+  "description": "TrainConnect Europe – Pan-Europäische Zugbuchungsplattform",
+  "author": "TrainConnect Europe Team <info@trainconnect.eu>",
+  "license": "ISC",
+  "main": "main.js",
+  "homepage": "https://trainconnect.eu",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder --win --mac --linux",
+    "build-frontend": "cd ../../frontend && node_modules\\.bin\\craco.cmd build",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "@electron/asar": "^4.2.0",
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
+    "sharp": "^0.34.5"
+  },
+  "build": {
+    "appId": "eu.trainconnect.app",
+    "productName": "TrainConnect Europe",
+    "copyright": "Copyright © 2026 TrainConnect Europe",
+    "directories": {
+      "output": "dist",
+      "buildResources": "icons"
+    },
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "backend/**/*",
+      "frontend-build/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**",
+      "!node_modules/sharp/**",
+      "!**/*.{md,map}",
+      "!**/test/**",
+      "!**/tests/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icons/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "icons/icon.icns",
+      "category": "public.app-category.travel"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "icons/",
+      "category": "Network"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "icons/icon.ico",
+      "uninstallerIcon": "icons/icon.ico",
+      "shortcutName": "TrainConnect Europe",
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerHeaderIcon": "icons/icon.ico",
+      "license": "LICENSE.txt"
+    },
+    "dmg": {
+      "title": "TrainConnect Europe",
+      "icon": "icons/icon.icns",
+      "background": "icons/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 130,
+          "y": 220,
+          "type": "file"
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "publish": null
+  }
+}

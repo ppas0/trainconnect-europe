@@ -108,16 +108,9 @@ export function Footer() {
           <a className="block text-xs normal-case tracking-normal font-body hover:text-white" href="https://github.com/public-transport/hafas-client" target="_blank" rel="noopener noreferrer">transport.rest / HAFAS</a>
         </div>
         <div>
-          <div className="text-xs">Demo-Hinweis</div>
-          <div className="text-xs normal-case tracking-normal font-body mt-2">Diese Plattform befindet sich im MVP-Testmodus. Zahlungen über Stripe-Testumgebung. Buchungen sind Demo-Reservierungen.</div>
-          <a
-            href="/downloads/TrainConnect_Europe_v1.6.zip"
-            download
-            className="inline-block mt-3 text-xs normal-case tracking-normal font-body text-[#E63946] hover:text-white underline"
-            data-testid="footer-download-source-zip"
-          >
-            ⬇ Quellcode herunterladen (ZIP)
-          </a>
+          <div className="text-xs">Rechtliches</div>
+          <div className="text-xs normal-case tracking-normal font-body mt-2">Preise und Verbindungen ohne Gewähr. Für verbindliche Buchungen wende dich direkt an den jeweiligen Eisenbahnbetreiber.</div>
+          <div className="text-xs normal-case tracking-normal font-body mt-1 text-[#9baeca]">© {new Date().getFullYear()} TrainConnect Europe · BFH-Schulprojekt</div>
         </div>
       </div>
     </footer>
@@ -218,7 +211,7 @@ export function SearchWidget({ initial }) {
         </div>
       </div>
       <div className="mt-6 flex items-center justify-between flex-wrap gap-3">
-        <div className="demo-badge">{t("form.demo_badge")}</div>
+        <div className="eyebrow text-[#9baeca] text-xs">{t("form.badge")}</div>
         <button data-testid="search-trains-btn" className="btn btn-primary" type="submit">
           <MagnifyingGlass size={16} weight="bold" /> {t("form.submit")}
         </button>

@@ -14,60 +14,94 @@ export function Home() {
   const routes = recs?.recommendations || [];
   return (
     <div className="relative">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 opacity-30"
-             style={{ backgroundImage: 'url(https://static.prod-images.emergentagent.com/jobs/fb96d4ae-a35e-4a10-b099-625bc93fdb67/images/76b56b578b309505fcfa292b0a4fb71b34dbdc471e9cbac21b26dc2f497d781c.png)', backgroundSize: "cover", backgroundPosition: "center" }} />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#050914]/80 via-[#050914]/95 to-[#050914]" />
-        <div className="max-w-7xl mx-auto px-6 pt-20 pb-16 md:pt-32 md:pb-28">
-          <div className="eyebrow flex items-center gap-3 text-[#E63946]">
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden min-h-[88vh] flex items-center">
+        {/* Ambient orbs */}
+        <div className="absolute -top-32 -left-32 w-[700px] h-[700px] rounded-full pointer-events-none"
+             style={{ background: "radial-gradient(circle, rgba(30,58,138,0.22) 0%, transparent 65%)", filter: "blur(80px)" }} />
+        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full pointer-events-none"
+             style={{ background: "radial-gradient(circle, rgba(230,57,70,0.1) 0%, transparent 65%)", filter: "blur(60px)" }} />
+
+        <div className="max-w-7xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-32 w-full">
+          <div className="eyebrow flex items-center gap-3" style={{ color: "#e63946" }}>
             <Lightning size={14} weight="fill" /> {t("home.eyebrow")}
           </div>
-          <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl uppercase mt-6 leading-[0.85]" data-testid="home-hero-title">
-            {t("home.title1")}<br/>
-            <span className="text-[#FDFBF7]">{t("home.title2")}</span>
+
+          <h1 className="font-display text-5xl sm:text-7xl lg:text-[7rem] uppercase mt-6 leading-[0.88]"
+              data-testid="home-hero-title">
+            <span style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #c8d8f0 50%, #ff4d59 100%)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+            }}>
+              {t("home.title1")}
+            </span>
+            <br/>
+            <span className="text-white">{t("home.title2")}</span>
           </h1>
-          <p className="mt-6 max-w-xl text-[#9baeca] text-lg font-body">{t("home.lead")}</p>
-          <div className="mt-12 max-w-5xl">
+
+          <p className="mt-7 max-w-xl font-body text-lg leading-relaxed" style={{ color: "#8ba4c9" }}>
+            {t("home.lead")}
+          </p>
+
+          <div className="mt-14 max-w-5xl fade-up">
             <SearchWidget />
+          </div>
+
+          {/* Stats row */}
+          <div className="mt-12 flex items-center gap-8 flex-wrap">
+            {[["34", "Länder"], ["80+", "Bahnhöfe"], ["100%", "Kostenlos"]].map(([n, l]) => (
+              <div key={l} className="flex items-baseline gap-2">
+                <span className="font-display text-3xl" style={{ color: "#e63946" }}>{n}</span>
+                <span className="eyebrow">{l}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* ── Popular Routes ── */}
       <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
           <div>
             <div className="eyebrow">{recs?.personalized ? "Für dich" : "Trending"} · {routes[0]?.source === "trending" ? "Live-Daten" : "Kuratiert"}</div>
-            <h2 className="font-display text-3xl uppercase">{recs?.personalized ? "Empfohlen für dich" : t("home.popular.title")}</h2>
+            <h2 className="font-display text-3xl uppercase mt-1">{recs?.personalized ? "Empfohlen für dich" : t("home.popular.title")}</h2>
           </div>
           <Link to="/stations" className="btn btn-ghost">{t("home.all_stations")}</Link>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {routes.map((p, i) => (
             <Link key={i} to={`/search?from_id=${p.from_id}&to_id=${p.to_id}&passengers=1`}
-                  className="surface p-5 hover:border-[#E63946] block" data-testid={`reco-${p.from_id}-${p.to_id}`}>
-              <div className="eyebrow flex items-center gap-2"><Train size={12} weight="duotone" /> {p.from?.country} → {p.to?.country}
-                {p.source === "trending" && p.score > 0 && <span className="text-[#E63946]">● {p.score}</span>}
+                  className="surface card-glow p-5 block group" data-testid={`reco-${p.from_id}-${p.to_id}`}
+                  style={{ transition: "all 200ms ease" }}>
+              <div className="eyebrow flex items-center gap-2">
+                <Train size={12} weight="duotone" /> {p.from?.country} → {p.to?.country}
+                {p.source === "trending" && p.score > 0 &&
+                  <span style={{ color: "#e63946" }}>● {p.score}</span>}
               </div>
-              <div className="font-display text-2xl uppercase mt-3 leading-tight">{p.from?.city}<br/>→ {p.to?.city}</div>
-              <div className="mt-4 flex justify-between items-end">
+              <div className="font-display text-2xl uppercase mt-3 leading-tight text-white">
+                {p.from?.city}<br/>→ {p.to?.city}
+              </div>
+              <div className="mt-5 flex justify-between items-end">
                 <div className="eyebrow">{t("search.from_price")}</div>
-                <div className="font-mono text-xl text-[#FDFBF7]">€{Number(p.price).toFixed(0)}</div>
+                <div className="font-mono text-xl font-bold" style={{ color: "#e63946" }}>€{Number(p.price).toFixed(0)}</div>
               </div>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 pb-24 grid md:grid-cols-3 gap-6">
+      {/* ── Features ── */}
+      <section className="max-w-7xl mx-auto px-6 pb-28 grid md:grid-cols-3 gap-6">
         {[
-          { icon: <Globe size={28} weight="duotone" />, t: t("home.feat1.t"), d: t("home.feat1.d") },
-          { icon: <MapPin size={28} weight="duotone" />, t: t("home.feat2.t"), d: t("home.feat2.d") },
-          { icon: <Ticket size={28} weight="duotone" />, t: t("home.feat3.t"), d: t("home.feat3.d") },
+          { icon: <Globe size={32} weight="duotone" />, t: t("home.feat1.t"), d: t("home.feat1.d") },
+          { icon: <MapPin size={32} weight="duotone" />, t: t("home.feat2.t"), d: t("home.feat2.d") },
+          { icon: <Ticket size={32} weight="duotone" />, t: t("home.feat3.t"), d: t("home.feat3.d") },
         ].map((b, i) => (
-          <div key={i} className="surface p-7" data-testid={`feature-${i}`}>
-            <div className="text-[#E63946]">{b.icon}</div>
-            <div className="font-display text-2xl uppercase mt-4">{b.t}</div>
-            <div className="mt-2 text-[#9baeca] font-body text-sm">{b.d}</div>
+          <div key={i} className="surface card-glow p-8 fade-up" data-testid={`feature-${i}`}
+               style={{ animationDelay: `${i * 80}ms` }}>
+            <div style={{ color: "#e63946" }}>{b.icon}</div>
+            <div className="font-display text-2xl uppercase mt-5">{b.t}</div>
+            <div className="mt-3 font-body text-sm leading-relaxed" style={{ color: "#8ba4c9" }}>{b.d}</div>
           </div>
         ))}
       </section>
@@ -383,7 +417,7 @@ export function Cart() {
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="eyebrow">{t("cart.checkout_label")}</div>
       <h1 className="font-display text-4xl uppercase">{t("cart.title")}</h1>
-      <div className="mt-2 demo-badge">{t("cart.demo_badge")}</div>
+      <div className="mt-2 eyebrow text-[#9baeca] text-xs">{t("cart.secure_badge")}</div>
 
       <div className="mt-8 grid gap-4">
         {items.map((it) => (
@@ -510,7 +544,7 @@ export function Tickets() {
               <a data-testid={`ticket-ics-${tk.id}`} href={ticketsApi.icsUrl(tk.id) + "?token=" + tok} className="btn btn-ghost !py-2 !px-3" target="_blank" rel="noopener noreferrer" title="In Kalender (iOS/Google/Outlook)">
                 <CalendarPlus size={14} weight="bold" /> .ics
               </a>
-              <a data-testid={`ticket-pkpass-${tk.id}`} href={ticketsApi.pkpassUrl(tk.id) + "?token=" + tok} className="btn btn-ghost !py-2 !px-3" target="_blank" rel="noopener noreferrer" title="Apple Wallet (unsigned demo)">
+              <a data-testid={`ticket-pkpass-${tk.id}`} href={ticketsApi.pkpassUrl(tk.id) + "?token=" + tok} className="btn btn-ghost !py-2 !px-3" target="_blank" rel="noopener noreferrer" title="Apple Wallet">
                 <AppleLogo size={14} weight="bold" /> Wallet
               </a>
             </div>
@@ -950,7 +984,11 @@ export function AuthPage({ mode = "login" }) {
       else await register(form);
       navigate("/", { replace: true });
     } catch (ex) {
-      setErr(ex?.response?.data?.detail || t("search.error"));
+      if (!ex?.response) {
+        setErr(t("auth.error_net"));
+      } else {
+        setErr(ex.response.data?.detail || t("auth.error"));
+      }
     } finally { setLoading(false); }
   };
 

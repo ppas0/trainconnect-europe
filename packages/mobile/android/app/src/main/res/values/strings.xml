@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrainConnect Europe</string>
+    <string name="title_activity_main">TrainConnect Europe</string>
+    <string name="package_name">eu.trainconnect.app</string>
+    <string name="custom_url_scheme">eu.trainconnect.app</string>
+</resources>
+

@@ -1,0 +1,26 @@
+{
+  "id": "/?source=pwa",
+  "name": "TrainConnect Europe",
+  "short_name": "TrainConnect",
+  "description": "Alle europäischen Zugverbindungen. Live-Karte, Verspätungen, Sofort-Buchung.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050914",
+  "theme_color": "#050914",
+  "orientation": "portrait-primary",
+  "lang": "de",
+  "dir": "ltr",
+  "categories": ["travel", "navigation", "transportation"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Verbindungen suchen", "short_name": "Suchen", "url": "/?source=shortcut-search", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Meine Tickets", "short_name": "Tickets", "url": "/tickets?source=shortcut-tickets", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Live-Karte", "short_name": "Karte", "url": "/stations?source=shortcut-map", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

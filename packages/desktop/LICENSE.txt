@@ -1,0 +1,10 @@
+TrainConnect Europe – Endbenutzer-Lizenzvertrag (EULA)
+
+Copyright © 2026 TrainConnect Europe / Berner Fachhochschule
+
+Diese Software wird für Bildungszwecke bereitgestellt. Die Zahlungsabwicklung
+ist eine Demo-Simulation. Es werden keine echten Buchungen durchgeführt.
+
+Alle Verbindungsdaten sind simulierte Demonstrationsdaten.
+
+MIT License – Freie Verwendung für Bildungs- und Demonstrationszwecke.
