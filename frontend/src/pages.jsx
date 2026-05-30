@@ -5,7 +5,7 @@ import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, 
 import { http, trainApi, cartApi, ticketsApi, affiliateApi, pushApi, urlBase64ToUint8Array, fmtTime, fmtDate, fmtDur, fmtPrice, BACKEND_URL } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT } from "./i18n";
-import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill } from "./components";
+import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill, ShareBar } from "./components";
 
 // ============== HOME / Landing ==============
 export function Home() {
@@ -202,6 +202,8 @@ export function JourneyDetail() {
               </div>
             </div>
           )}
+
+          <ShareBar journey={j} />
         </div>
         <div className="lg:col-span-3 surface overflow-hidden" style={{ height: "calc(100vh - 200px)" }}>
           <RouteMap journey={j} livePositions={live?.legs} />

@@ -22,6 +22,12 @@ Constraints: alles **kostenlos**, **echte Daten** wo möglich, **Test-Zahlung** 
 
 ## What's Been Implemented (Jan 2026)
 
+### Phase 7 (30.05.2026) – Share-Funktion (Viral Growth)
+- ✅ **ShareBar-Komponente** auf Journey-Detail-Seite (`/journey/:id`) – 4 Kanäle: Native (mobile `navigator.share`), WhatsApp (`wa.me`), E-Mail (`mailto:`), Link kopieren (`navigator.clipboard` + Fallback `execCommand`).
+- ✅ **i18n DE/EN/FR/IT/ES** für alle Share-Texte (7 neue Keys: `jd.share.*`).
+- ✅ **data-testid**: `share-bar`, `share-whatsapp-btn`, `share-email-btn`, `share-copy-btn`, `share-native-btn`. Copy-Button zeigt 1,8 s lang Check-Icon + „Link kopiert!".
+- ✅ ZIP-Download auf **v1.6 (917 KB)** aktualisiert.
+
 ### Phase 6 (30.05.2026) – Production-Ready Fixes + Source-ZIP-Download
 - ✅ **Bug-Fix `/api/recommendations`** – KeyError auf `j["from"]["id"]` behoben. Endpoint nutzt jetzt defensives `isinstance(dict)` + `.get()` für `from`/`to` aus `journey_cache`, fehlende/malformed Docs werden übersprungen statt 500 (server.py ~L1486).
 - ✅ **Startup-Härtung für K8s-Production** – `@app.on_event("startup")` ist jetzt try/except-gekapselt und schiebt den 51k-Trainline-CSV-Import nach 5 s Delay als `asyncio.create_task` ab. Health-Probe `/api/` antwortet <2 s nach Start, Pod-Bind bleibt unblockiert (server.py L1755–1790).

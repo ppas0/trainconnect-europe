@@ -72,6 +72,13 @@ export const DICT = {
   "jd.loading": { de: "Lade Verbindung...", en: "Loading connection...", fr: "Chargement...", it: "Caricamento...", es: "Cargando..." },
   "jd.providers": { de: "Direkt beim Anbieter buchen", en: "Book directly with operator", fr: "Réserver directement", it: "Prenota direttamente", es: "Reservar directamente" },
   "jd.providers_note": { de: "Diese Plattform stellt nur Demo-Reservierungen aus. Für offizielle Tickets nutze einen der folgenden Anbieter:", en: "This platform issues demo reservations only. For official tickets use one of the following operators:", fr: "Cette plateforme délivre des réservations de démo uniquement. Pour des billets officiels, utilisez l'un des opérateurs suivants:", it: "Questa piattaforma emette solo prenotazioni demo. Per biglietti ufficiali usa uno dei seguenti operatori:", es: "Esta plataforma emite solo reservas de demostración. Para billetes oficiales usa uno de los siguientes operadores:" },
+  "jd.share": { de: "Verbindung teilen", en: "Share connection", fr: "Partager", it: "Condividi", es: "Compartir" },
+  "jd.share.whatsapp": { de: "WhatsApp", en: "WhatsApp", fr: "WhatsApp", it: "WhatsApp", es: "WhatsApp" },
+  "jd.share.email": { de: "E-Mail", en: "Email", fr: "E-mail", it: "E-mail", es: "Correo" },
+  "jd.share.copy": { de: "Link kopieren", en: "Copy link", fr: "Copier le lien", it: "Copia link", es: "Copiar enlace" },
+  "jd.share.copied": { de: "Link kopiert!", en: "Link copied!", fr: "Lien copié!", it: "Link copiato!", es: "¡Enlace copiado!" },
+  "jd.share.native": { de: "Teilen…", en: "Share…", fr: "Partager…", it: "Condividi…", es: "Compartir…" },
+  "jd.share.message": { de: "Schau dir diese Bahnverbindung an", en: "Check out this train connection", fr: "Découvre cette liaison ferroviaire", it: "Guarda questa connessione ferroviaria", es: "Mira esta conexión ferroviaria" },
 
   // Stations
   "st.network": { de: "Netz", en: "Network", fr: "Réseau", it: "Rete", es: "Red" },

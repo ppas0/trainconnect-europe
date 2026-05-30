@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Link, useNavigate } from "react-router-dom";
-import { TrainSimple, MapPin, MagnifyingGlass, Ticket, SignIn, SignOut, ListBullets, ShoppingCart, Globe, CaretDown } from "@phosphor-icons/react";
+import { TrainSimple, MapPin, MagnifyingGlass, Ticket, SignIn, SignOut, ListBullets, ShoppingCart, Globe, CaretDown, ShareNetwork, WhatsappLogo, EnvelopeSimple, Copy, Check } from "@phosphor-icons/react";
 import { trainApi, fmtTime } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT, LANGS } from "./i18n";
@@ -110,7 +110,7 @@ export function Footer() {
           <div className="text-xs">Demo-Hinweis</div>
           <div className="text-xs normal-case tracking-normal font-body mt-2">Diese Plattform befindet sich im MVP-Testmodus. Zahlungen über Stripe-Testumgebung. Buchungen sind Demo-Reservierungen.</div>
           <a
-            href="/downloads/TrainConnect_Europe_v1.5.zip"
+            href="/downloads/TrainConnect_Europe_v1.6.zip"
             download
             className="inline-block mt-3 text-xs normal-case tracking-normal font-body text-[#E63946] hover:text-white underline"
             data-testid="footer-download-source-zip"
@@ -370,4 +370,59 @@ export function DelayPill({ minutes }) {
   const { t } = useT();
   if (minutes && minutes > 0) return <span className="delay-badge">+{minutes} min</span>;
   return <span className="delay-ok">{t("search.on_time")}</span>;
+}
+
+
+// ============== Share Bar (Journey Detail) ==============
+export function ShareBar({ journey }) {
+  const { t } = useT();
+  const [copied, setCopied] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.href : "";
+  const title = `${journey.from.city} → ${journey.to.city}`;
+  const text = `${t("jd.share.message")}: ${title} · TrainConnect Europe`;
+  const canNative = typeof navigator !== "undefined" && !!navigator.share;
+
+  const onNative = async () => {
+    try { await navigator.share({ title, text, url }); } catch (_) { /* user cancelled */ }
+  };
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (_) {
+      // Fallback for older browsers / non-secure contexts
+      const ta = document.createElement("textarea");
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); setCopied(true); setTimeout(() => setCopied(false), 1800); }
+      finally { document.body.removeChild(ta); }
+    }
+  };
+  const waHref = `https://wa.me/?text=${encodeURIComponent(text + " " + url)}`;
+  const mailHref = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text + "\n\n" + url)}`;
+
+  return (
+    <div className="surface p-5" data-testid="share-bar">
+      <div className="eyebrow flex items-center gap-2">
+        <ShareNetwork size={12} weight="duotone" /> {t("jd.share")}
+      </div>
+      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {canNative && (
+          <button onClick={onNative} className="btn btn-ghost !py-2 text-xs" data-testid="share-native-btn">
+            <ShareNetwork size={14} weight="bold" /> {t("jd.share.native")}
+          </button>
+        )}
+        <a href={waHref} target="_blank" rel="noopener noreferrer" className="btn btn-ghost !py-2 text-xs" data-testid="share-whatsapp-btn">
+          <WhatsappLogo size={14} weight="bold" /> {t("jd.share.whatsapp")}
+        </a>
+        <a href={mailHref} className="btn btn-ghost !py-2 text-xs" data-testid="share-email-btn">
+          <EnvelopeSimple size={14} weight="bold" /> {t("jd.share.email")}
+        </a>
+        <button onClick={onCopy} className="btn btn-ghost !py-2 text-xs" data-testid="share-copy-btn">
+          {copied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="bold" />}
+          {copied ? t("jd.share.copied") : t("jd.share.copy")}
+        </button>
+      </div>
+    </div>
+  );
 }
