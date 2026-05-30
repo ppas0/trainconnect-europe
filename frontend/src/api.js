@@ -79,6 +79,14 @@ export const pushApi = {
   notifyDelays: () => http.post("/push/notify-delays").then((r) => r.data),
 };
 
+// ---- Price Alerts ----
+export const priceAlertsApi = {
+  create: (data) => http.post("/price-alerts", data).then((r) => r.data),
+  list: () => http.get("/price-alerts").then((r) => r.data),
+  remove: (id) => http.delete(`/price-alerts/${id}`).then((r) => r.data),
+  check: () => http.post("/price-alerts/check").then((r) => r.data),
+};
+
 // b64url -> Uint8Array (for VAPID applicationServerKey)
 export function urlBase64ToUint8Array(b64) {
   const padding = "=".repeat((4 - (b64.length % 4)) % 4);

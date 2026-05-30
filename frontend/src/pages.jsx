@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut, AppleLogo, CalendarPlus, Funnel, Bell, BellSlash, Gear, FloppyDisk } from "@phosphor-icons/react";
-import { http, trainApi, cartApi, ticketsApi, affiliateApi, pushApi, urlBase64ToUint8Array, fmtTime, fmtDate, fmtDur, fmtPrice, BACKEND_URL } from "./api";
+import { Train, ArrowRight, Clock, Lightning, MapPin, Ticket, FilePdf, Warning, Lock, Globe, ArrowSquareOut, AppleLogo, CalendarPlus, Funnel, Bell, BellSlash, Gear, FloppyDisk, TrendDown, Trash } from "@phosphor-icons/react";
+import { http, trainApi, cartApi, ticketsApi, affiliateApi, pushApi, priceAlertsApi, urlBase64ToUint8Array, fmtTime, fmtDate, fmtDur, fmtPrice, BACKEND_URL } from "./api";
 import { useAuth, useCart } from "./store";
 import { useT } from "./i18n";
 import { SearchWidget, RouteMap, JourneyCard, StationsMap, DelayPill, ShareBar } from "./components";
@@ -118,11 +118,84 @@ export function Search() {
           {data?.results?.map((j) => (
             <JourneyCard key={j.id} j={j} onBook={onBook} onView={(jj) => { setSelectedJ(jj); navigate(`/journey/${jj.id}`); }} />
           ))}
+          {data?.results?.length > 0 && (
+            <PriceAlertWidget
+              from_id={from_id}
+              to_id={to_id}
+              passengers={passengers}
+              suggested={data.results[0]?.total_price}
+              fromName={from_name}
+              toName={to_name}
+            />
+          )}
         </div>
         <div className="lg:col-span-2 surface min-h-[500px] overflow-hidden" style={{ height: "calc(100vh - 200px)" }}>
           {selectedJ ? <RouteMap journey={selectedJ} /> : <div className="h-full flex items-center justify-center text-[#9baeca]">{t("search.choose")}</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============== Price Alert Widget (inline on Search page) ==============
+function PriceAlertWidget({ from_id, to_id, passengers, suggested, fromName, toName }) {
+  const { t } = useT();
+  const { user } = useAuth();
+  const [threshold, setThreshold] = useState(suggested ? Math.max(10, Math.round(suggested * 0.85)) : 50);
+  const [submitting, setSubmitting] = useState(false);
+  const [created, setCreated] = useState(false);
+
+  const onSubmit = async () => {
+    if (!user) {
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await priceAlertsApi.create({ from_id, to_id, threshold: Number(threshold), passengers });
+      setCreated(true);
+      setTimeout(() => setCreated(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="surface p-5 border-l-2 border-[#E63946]" data-testid="price-alert-widget">
+      <div className="eyebrow flex items-center gap-2 text-[#E63946]">
+        <TrendDown size={14} weight="duotone" /> {t("pa.title")}
+      </div>
+      <div className="text-xs text-[#9baeca] mt-2 font-body">{t("pa.lead")}</div>
+      <div className="mt-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+        <label className="flex-1">
+          <div className="eyebrow text-xs mb-1">{t("pa.threshold")}</div>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={threshold}
+            onChange={(e) => setThreshold(e.target.value)}
+            className="w-full bg-[#0c152b] border border-[#1a2d5e] px-3 py-2 font-mono text-lg"
+            data-testid="price-alert-threshold-input"
+          />
+        </label>
+        <button
+          onClick={onSubmit}
+          disabled={submitting}
+          className="btn btn-primary"
+          data-testid="price-alert-create-btn"
+        >
+          {created ? <>✓ {t("pa.created_toast")}</> : <><Bell size={14} weight="bold" /> {t("pa.create")}</>}
+        </button>
+      </div>
+      {!user && (
+        <div className="mt-2 text-xs text-[#9baeca] font-body">{t("pa.login_required")}</div>
+      )}
+      <Link to="/alerts" className="block mt-3 text-xs text-[#E63946] underline" data-testid="price-alert-manage-link">
+        {t("pa.list_title")} →
+      </Link>
     </div>
   );
 }
@@ -772,6 +845,91 @@ function AffiliateConfigCard() {
     </div>
   );
 }
+
+// ============== Price Alerts Management Page ==============
+export function PriceAlertsPage() {
+  const { t } = useT();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { data, refetch, isLoading } = useQuery({
+    queryKey: ["price-alerts"],
+    queryFn: priceAlertsApi.list,
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (!user) navigate("/login?next=/alerts", { replace: true });
+  }, [user, navigate]);
+
+  const onDelete = async (id) => {
+    try { await priceAlertsApi.remove(id); await refetch(); } catch (e) { console.error(e); }
+  };
+
+  const alerts = data?.alerts || [];
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="eyebrow flex items-center gap-2 text-[#E63946]">
+        <TrendDown size={12} weight="duotone" /> {t("nav.alerts")}
+      </div>
+      <h1 className="font-display text-4xl uppercase mt-2" data-testid="alerts-page-title">{t("pa.list_title")}</h1>
+      <div className="mt-2 text-[#9baeca] font-body text-sm">{t("pa.lead")}</div>
+
+      {isLoading && <div className="surface mt-8 p-8 text-center text-[#9baeca]">{t("search.loading")}</div>}
+
+      {!isLoading && alerts.length === 0 && (
+        <div className="surface mt-8 p-8 text-center text-[#9baeca]" data-testid="alerts-empty">
+          {t("pa.empty")}
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-4">
+        {alerts.map((a) => {
+          const triggered = a.last_price != null && Number(a.last_price) <= Number(a.threshold);
+          return (
+            <div key={a.id} className={"surface p-5 " + (triggered ? "border-l-2 border-[#E63946]" : "")} data-testid={`alert-row-${a.id}`}>
+              <div className="flex justify-between items-start gap-4 flex-wrap">
+                <div className="flex-1 min-w-[240px]">
+                  <div className="eyebrow flex items-center gap-2">
+                    <Bell size={12} weight="duotone" /> {a.from_city} → {a.to_city}
+                  </div>
+                  <div className="font-display text-2xl uppercase mt-2">{a.from_city} → {a.to_city}</div>
+                  <div className="mt-1 text-xs text-[#9baeca] font-body">
+                    {a.passengers} {t("common.persons")} · {t("pa.threshold")}: <span className="text-[#FDFBF7]">€{Number(a.threshold).toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="eyebrow">{t("pa.last_price")}</div>
+                  <div className={"font-mono text-2xl " + (triggered ? "text-[#19c37d]" : "")}>
+                    {a.last_price != null ? `€${Number(a.last_price).toFixed(2)}` : "—"}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <Link
+                  to={`/search?from_id=${a.from_id}&to_id=${a.to_id}&passengers=${a.passengers}`}
+                  className="btn btn-ghost !py-2 text-xs"
+                  data-testid={`alert-view-${a.id}`}
+                >
+                  <ArrowRight size={12} weight="bold" /> {t("search.view")}
+                </Link>
+                <button
+                  onClick={() => onDelete(a.id)}
+                  className="btn btn-ghost !py-2 text-xs text-[#E63946]"
+                  data-testid={`alert-delete-${a.id}`}
+                >
+                  <Trash size={12} weight="bold" /> {t("pa.delete")}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 
 // ============== Auth (Login/Register) ==============
 export function AuthPage({ mode = "login" }) {

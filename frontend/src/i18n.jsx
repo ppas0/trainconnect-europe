@@ -154,6 +154,21 @@ export const DICT = {
   // Common
   "common.persons": { de: "Pers.", en: "pers.", fr: "pers.", it: "pers.", es: "pers." },
   "common.delay_short": { de: "min", en: "min", fr: "min", it: "min", es: "min" },
+
+  // Price Alerts
+  "pa.title": { de: "Preisalarm", en: "Price alert", fr: "Alerte prix", it: "Avviso prezzo", es: "Alerta de precio" },
+  "pa.lead": { de: "Benachrichtige mich, sobald diese Strecke unter einen Schwellwert fällt.", en: "Notify me when this route drops below a threshold.", fr: "Prévenez-moi quand cette ligne passe sous un seuil.", it: "Avvisami quando questa tratta scende sotto una soglia.", es: "Avísame cuando esta ruta baje de un umbral." },
+  "pa.threshold": { de: "Schwelle (€)", en: "Threshold (€)", fr: "Seuil (€)", it: "Soglia (€)", es: "Umbral (€)" },
+  "pa.create": { de: "Alarm aktivieren", en: "Activate alert", fr: "Activer l'alerte", it: "Attiva avviso", es: "Activar alerta" },
+  "pa.active": { de: "Aktiv", en: "Active", fr: "Active", it: "Attivo", es: "Activa" },
+  "pa.last_price": { de: "Letzter Preis", en: "Last price", fr: "Dernier prix", it: "Ultimo prezzo", es: "Último precio" },
+  "pa.delete": { de: "Löschen", en: "Delete", fr: "Supprimer", it: "Elimina", es: "Eliminar" },
+  "pa.list_title": { de: "Deine Preisalarme", en: "Your price alerts", fr: "Vos alertes prix", it: "I tuoi avvisi prezzo", es: "Tus alertas de precio" },
+  "pa.empty": { de: "Noch keine Alarme. Erstelle einen auf einer Suchergebnisseite.", en: "No alerts yet. Create one from a search result.", fr: "Aucune alerte. Créez-en une depuis un résultat de recherche.", it: "Nessun avviso. Creane uno da un risultato di ricerca.", es: "Sin alertas todavía. Crea una desde un resultado de búsqueda." },
+  "pa.login_required": { de: "Bitte einloggen, um Preisalarme zu setzen.", en: "Please log in to set price alerts.", fr: "Connectez-vous pour configurer des alertes.", it: "Accedi per impostare avvisi prezzo.", es: "Inicia sesión para configurar alertas." },
+  "pa.created_toast": { de: "Preisalarm aktiviert!", en: "Price alert activated!", fr: "Alerte prix activée!", it: "Avviso prezzo attivato!", es: "¡Alerta de precio activada!" },
+  "pa.deleted_toast": { de: "Alarm gelöscht", en: "Alert deleted", fr: "Alerte supprimée", it: "Avviso eliminato", es: "Alerta eliminada" },
+  "nav.alerts": { de: "Alarme", en: "Alerts", fr: "Alertes", it: "Avvisi", es: "Alertas" },
 };
 
 const LangCtx = createContext({ lang: "de", setLang: () => {}, t: (k) => k });

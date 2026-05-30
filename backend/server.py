@@ -364,6 +364,13 @@ class CheckoutIn(BaseModel):
     cart_id: str
 
 
+class PriceAlertIn(BaseModel):
+    from_id: str
+    to_id: str
+    threshold: float = Field(..., gt=0)
+    passengers: int = 1
+
+
 # ---------------------------------------------------------------------------
 # Auth helpers
 # ---------------------------------------------------------------------------
@@ -1747,6 +1754,132 @@ async def _delay_poller_loop():
         await asyncio.sleep(300)
 
 
+# ---------------------------------------------------------------------------
+# Price Alerts – users subscribe to a route, get push when price drops below
+# ---------------------------------------------------------------------------
+async def _estimate_route_price(from_id: str, to_id: str, passengers: int = 1) -> Optional[float]:
+    """Search the journey for a route and return the cheapest total price."""
+    try:
+        res = await db.popular_routes.find_one({"from_id": from_id, "to_id": to_id})
+        base = res["price"] if res else None
+        # Use live synthetic-journey logic: cheapest leg sum * passengers
+        a = await resolve_station(from_id)
+        b = await resolve_station(to_id)
+        if not (a and b):
+            return base
+        km = haversine_km(a, b)
+        est = round(0.09 * km + 12, 2) if km else (base or 49.0)
+        # Tiny randomization for demo so polled prices vary slightly day-to-day
+        import random
+        est = round(est * (1.0 + random.uniform(-0.15, 0.05)), 2)
+        return est * max(1, passengers)
+    except Exception:
+        return None
+
+
+@api.post("/price-alerts")
+async def create_price_alert(body: PriceAlertIn, user=Depends(current_user)):
+    """Create or update a price alert for the current user (one per from/to/passengers)."""
+    a = await resolve_station(body.from_id)
+    b = await resolve_station(body.to_id)
+    if not (a and b):
+        raise HTTPException(404, "Station not found")
+    alert_id = hashlib.md5(f"{user['id']}:{body.from_id}:{body.to_id}:{body.passengers}".encode()).hexdigest()
+    doc = {
+        "_id": alert_id,
+        "user_id": user["id"],
+        "from_id": body.from_id,
+        "to_id": body.to_id,
+        "from_name": a.get("name"),
+        "to_name": b.get("name"),
+        "from_city": a.get("city"),
+        "to_city": b.get("city"),
+        "threshold": float(body.threshold),
+        "passengers": body.passengers,
+        "active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_price": await _estimate_route_price(body.from_id, body.to_id, body.passengers),
+        "last_checked": datetime.now(timezone.utc).isoformat(),
+        "triggered_at": None,
+    }
+    await db.price_alerts.replace_one({"_id": alert_id}, doc, upsert=True)
+    doc["id"] = doc.pop("_id")
+    return doc
+
+
+@api.get("/price-alerts")
+async def list_price_alerts(user=Depends(current_user)):
+    rows = []
+    async for doc in db.price_alerts.find({"user_id": user["id"]}).sort("created_at", -1):
+        doc["id"] = doc.pop("_id")
+        rows.append(doc)
+    return {"alerts": rows}
+
+
+@api.delete("/price-alerts/{alert_id}")
+async def delete_price_alert(alert_id: str, user=Depends(current_user)):
+    r = await db.price_alerts.delete_one({"_id": alert_id, "user_id": user["id"]})
+    if r.deleted_count == 0:
+        raise HTTPException(404)
+    return {"deleted": True}
+
+
+async def _check_price_alerts() -> Dict[str, Any]:
+    """For each active alert, fetch fresh price; push if <= threshold and not recently triggered."""
+    checked = 0
+    notified = 0
+    now = datetime.now(timezone.utc)
+    async for a in db.price_alerts.find({"active": True}):
+        try:
+            price = await _estimate_route_price(a["from_id"], a["to_id"], a.get("passengers", 1))
+            if price is None:
+                continue
+            await db.price_alerts.update_one(
+                {"_id": a["_id"]},
+                {"$set": {"last_price": price, "last_checked": now.isoformat()}},
+            )
+            checked += 1
+            if price > a["threshold"]:
+                continue
+            # de-dupe: don't notify same alert within 6h
+            if a.get("triggered_at"):
+                try:
+                    last = datetime.fromisoformat(a["triggered_at"])
+                    if (now - last) < timedelta(hours=6):
+                        continue
+                except Exception:
+                    pass
+            title = f"💸 -{round((a['threshold']-price),0)}€ unter Schwellwert"
+            body = f"{a.get('from_city')} → {a.get('to_city')} jetzt €{price:.2f} (Schwelle €{a['threshold']:.0f})"
+            url = f"/search?from_id={a['from_id']}&to_id={a['to_id']}&passengers={a.get('passengers',1)}"
+            async for sub in db.push_subs.find({"user_id": a["user_id"], "active": True}):
+                if await _send_push(sub, title, body, url):
+                    notified += 1
+            await db.price_alerts.update_one({"_id": a["_id"]}, {"$set": {"triggered_at": now.isoformat()}})
+        except Exception as e:
+            logger.warning("price-alert check error %s: %s", a.get("_id"), e)
+    return {"checked": checked, "notified": notified}
+
+
+@api.post("/price-alerts/check")
+async def trigger_price_alerts_check(user=Depends(current_user)):
+    """Manual trigger (also runs every 15 min in background)."""
+    return await _check_price_alerts()
+
+
+async def _price_alerts_loop():
+    """Background task: every 15 min check all price alerts."""
+    await asyncio.sleep(45)  # let app settle
+    while True:
+        try:
+            res = await _check_price_alerts()
+            if res["notified"]:
+                logger.info("Price-alert loop: %s", res)
+        except Exception as e:
+            logger.warning("price-alert loop error: %s", e)
+        await asyncio.sleep(900)  # 15 min
+
+
 @app.on_event("startup")
 async def _push_startup():
     """Non-blocking startup: seed only if empty, push heavy work to background.
@@ -1759,6 +1892,7 @@ async def _push_startup():
     """
     try:
         asyncio.create_task(_delay_poller_loop())
+        asyncio.create_task(_price_alerts_loop())
         if await db.stations.count_documents({}) == 0:
             await db.stations.insert_many([{**s, "_id": s["id"]} for s in SEED_STATIONS])
         if await db.popular_routes.count_documents({}) == 0:

@@ -1,0 +1,57 @@
+{
+  "summary": "Iteration 8 — Price Alert (Preisalarm) feature fully tested. Created /app/backend/tests/test_iteration8_price_alerts.py with 11 pytest cases covering CRUD on /api/price-alerts, idempotency, /check trigger, ownership/auth guards, booking flow regression (search → cart array body → checkout/session returning cs_test_), and recommendations/popular-routes/stations regression. ALL 11 PASS in 2.08s. Frontend Playwright: PriceAlertWidget renders correctly on /search with prefilled threshold (49 ≈ 85% of €57); button transitions from 'Alarm aktivieren' to '✓ Preisalarm aktiviert!' after click while logged in; /alerts page shows alert row and delete works (1→0); /alerts redirects to /login?next=/alerts when unauthed; nav-alerts header link visible only when logged in (label 'ALARME' in DE). i18n verified across all 5 languages (DE/EN/FR/IT/ES) — widget title, lead text, threshold label and CTA button all switch correctly.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "regression_results": {
+    "TestPriceAlerts::test_create_price_alert": "PASS",
+    "TestPriceAlerts::test_create_is_idempotent_replace_in_place": "PASS",
+    "TestPriceAlerts::test_list_alerts_returns_current_user": "PASS",
+    "TestPriceAlerts::test_check_endpoint": "PASS (returns {checked,notified})",
+    "TestPriceAlerts::test_delete_alert": "PASS",
+    "TestPriceAlerts::test_unauth_listing_blocked": "PASS (401/403)",
+    "TestPriceAlerts::test_delete_other_users_alert_404": "PASS",
+    "TestBookingFlow::test_full_booking_flow": "PASS (POST /journeys/search → POST /cart [array] → POST /checkout/session returned url with cs_test_ and session_id)",
+    "TestRegression::test_recommendations_limit_4": "PASS",
+    "TestRegression::test_popular_routes": "PASS",
+    "TestRegression::test_stations_search_berlin": "PASS"
+  },
+  "frontend_smoke": {
+    "price_alert_widget_renders_below_journey_cards": "PASS (data-testid=price-alert-widget visible)",
+    "threshold_prefilled": "PASS (value=49 ~ 85% of €57 cheapest leg)",
+    "create_btn_visible": "PASS (data-testid=price-alert-create-btn)",
+    "i18n_de_en_fr_it_es": "PASS (Preisalarm / Price alert / Alerte prix / Avviso prezzo / Alerta de precio — and button labels match)",
+    "unauth_alerts_redirect_to_login": "PASS (/alerts → /login?next=/alerts)",
+    "login_then_nav_alerts_link_visible": "PASS (data-testid=nav-alerts text='Alarme' in DE)",
+    "alerts_page_title": "PASS ('Deine Preisalarme')",
+    "create_alert_button_changes_to_activated": "PASS ('Alarm aktivieren' → '✓ Preisalarm aktiviert!')",
+    "alert_row_delete": "PASS (count 1 → 0 after click on data-testid=alert-delete-{id})"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration8_price_alerts.py",
+    "/app/test_reports/pytest/iteration8_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:1787 — alert _id derived deterministically from md5(user_id:from_id:to_id:passengers) gives clean idempotent upsert; nice touch. Verified by test_create_is_idempotent_replace_in_place — second POST with different threshold replaces in place (same id).",
+    "server.py:1806 — exclude _id by doing doc['id']=doc.pop('_id') before return; matches the ObjectId-exclusion guideline. Same pattern in list (line 1814). No raw Mongo _id leaks through the API.",
+    "server.py:1821 — DELETE filters on {_id, user_id:user.id} so cross-user deletion impossible (returns 404). Verified by test_delete_other_users_alert_404.",
+    "server.py:1855 — push notifications: iterates all active subscriptions for the user and increments notified for each successful send. Reasonable; no Stripe/billing dependency.",
+    "server.py:1832 — _check_price_alerts uses 6h de-dupe window via triggered_at; sensible to avoid spam. Background loop at 1880 (900s = 15 min) plus manual POST trigger at 1864. Good split.",
+    "server.py:1873 — bg loop sleeps 45s before first check; aligns with non-blocking startup pattern from iter 7.",
+    "frontend pages.jsx:861 — useEffect redirect to /login?next=/alerts when !user works; verified end-to-end.",
+    "frontend pages.jsx:888 — triggered banner (border-l-2 red) when last_price <= threshold; nice UX signal.",
+    "i18n.jsx:159-171 — all 11 pa.* keys + nav.alerts have full DE/EN/FR/IT/ES translations. No missing entries.",
+    "Minor: server.py still uses deprecated @app.on_event('startup') (carried from iter 7). Non-blocking.",
+    "Minor: _estimate_route_price randomization (±15%/+5%) is fine for demo but means /check returns slightly different last_price each call — documented in spec as expected. No bug."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration8_price_alerts.py",
+    "/app/test_reports/iteration_8.json"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% (9/9 smoke checks across 5 languages + auth/CRUD flows)"},
+  "test_credentials": "demo@trainconnect.eu / demo123 (works, JWT returned via /api/auth/login)",
+  "seed_data_creation": "None new. Demo user reused from prior iterations. Price-alert test rows are created and cleaned within the test class itself (one delete test + idempotent replace).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Price Alert feature is solid: backend CRUD + idempotency + ownership guard + 15-min background loop. Frontend widget pre-fills threshold at ~85% of cheapest journey price. All 5 languages translated correctly. To re-run: `python -m pytest /app/backend/tests/test_iteration8_price_alerts.py -v`. Test file loads /app/frontend/.env via python-dotenv. Booking flow regression (POST /cart with ARRAY body, NOT object) confirmed working end-to-end producing cs_test_ Stripe URLs."
+}
